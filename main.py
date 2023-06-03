@@ -8,7 +8,7 @@ import runtime
 def init_env():
     runtime.Agent = Agents.Agent()
     runtime.Opponent = Users.Human()
-    runtime.Board = Board.Board()
+    runtime.ticTacBoard = Board.TicTacBoard()
 
 
 def world_state():
