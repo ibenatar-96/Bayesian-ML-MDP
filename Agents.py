@@ -16,5 +16,4 @@ class aiAgent:
             pass
         else:
             b_v = dist.Bernoulli(self.model_parameters[action_parameter]).sample()
-            # test
             print(b_v)
