@@ -92,7 +92,7 @@ class TicTacBoard:
 
     def get_possible_moves(self, mark):
         moves = []
-        state = runtime.World_State
+        state = runtime.Board_State
         for i in range(3):
             for j in range(3):
                 if state[i][j] is None:

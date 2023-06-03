@@ -6,26 +6,16 @@ import runtime
 
 
 def init_env():
-    runtime.Agent = Agents.Agent()
+    runtime.aiAgent = Agents.aiAgent()
     runtime.Opponent = Users.Human()
-    runtime.ticTacBoard = Board.TicTacBoard()
-
-
-def world_state():
-    pass
-
-
-def all_terminated():
-    pass
-
-
-def terminate_agents():
-    pass
+    runtime.TicTacBoard = Board.TicTacBoard()
+    runtime.Board_State = runtime.TicTacBoard.get_state()
 
 
 def main():
     init_env()
-
+    runtime.Opponent.move()
+    runtime.aiAgent.move(1)
 
 if __name__ == '__main__':
     main()

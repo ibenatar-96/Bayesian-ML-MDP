@@ -1,5 +1,5 @@
 DEBUG = True
-World_State = {'agents_positions': [], 'populated_v': [], 'broken_v': []}
-Agent = None
+Board_State = None
+aiAgent = None
 Opponent = None
 TicTacBoard = None
