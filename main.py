@@ -13,9 +13,14 @@ def init_env():
 
 
 def main():
+    state = [['O', 'O', 'X'], ['X', 'X', 'X'], ['O', 'X', 'O']]
+
     init_env()
-    runtime.Opponent.move()
-    runtime.aiAgent.move(1)
+    while not runtime.Board_State.is_over():
+        runtime.TicTacBoard.mark(runtime.Opponent.next_move())
+        if runtime.Board_State.is_over():
+            break
+        runtime.TicTacBoard.mark(runtime.aiAgent.next_move())
 
 if __name__ == '__main__':
     main()
