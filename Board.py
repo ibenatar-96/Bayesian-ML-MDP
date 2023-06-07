@@ -4,15 +4,14 @@ from functools import reduce
 import runtime
 from itertools import product
 from itertools import combinations
-
-
-def extract_b_dict(state):
-    return {key: value for key, value in state.items() if key.startswith("B")}
+import ast
 
 
 class TicTacBoard:
     def __init__(self):
         self._states = self._init_states()
+        if runtime.CLEAN_STATES:
+            self._clean_states()
         self._state = self._states[str([[None] * 3 for _ in range(3)])]
 
     def __iter__(self):
@@ -39,6 +38,40 @@ class TicTacBoard:
             print(f"Time for Creating State Space: {end_time - start_time}")
         return states
 
+    def _clean_states(self):
+        r = dict(self._states)
+        for board in r.keys():
+            board = eval(board)
+            player_x = player_o = False
+            for row in board:
+                player = row[0]
+                if all(i == player for i in row) and player is not None:
+                    if player == 'X':
+                        player_x = True
+                    elif player == 'O':
+                        player_o = True
+            for j in range(3):
+                column = [row[j] for row in board]
+                player = column[0]
+                if all(i == player for i in column) and player is not None:
+                    if player == 'X':
+                        player_x = True
+                    elif player == 'O':
+                        player_o = True
+            if board[0][0] == board[1][1] == board[2][2] and board[1][1] is not None:
+                if board[1][1] == 'X':
+                    player_x = True
+                elif board[1][1] == 'O':
+                    player_o = True
+            if board[0][2] == board[1][1] == board[2][0] and board[1][1] is not None:
+                if board[1][1] == 'X':
+                    player_x = True
+                elif board[1][1] == 'O':
+                    player_o = True
+
+            if player_x and player_o:
+                del self._states[str(board)]
+
     def _is_terminal(self, board):
         for row in board:
             player = row[0]
@@ -61,24 +94,35 @@ class TicTacBoard:
     def get_state(self):
         return self._state
 
-    def get_possible_moves(self, mark):
+    def get_states(self):
+        return self._states
+
+    @staticmethod
+    def get_possible_moves(state=None):
         moves = []
-        state = runtime.Board_State.BOARD
-        for i in range(3):
-            for j in range(3):
-                if state[i][j] is None:
-                    possible_move = copy.deepcopy(state)
-                    possible_move[i][j] = mark
-                    moves.append(possible_move)
+        _state = state
+        if _state is None:
+            _state = runtime.Board_State.BOARD
+        if isinstance(_state, State):
+            _state = _state.BOARD
+        if not isinstance(_state, list):
+            _state = eval(_state)
+
+        moves = [(i * 3 + j + 1) for i in range(3) for j in range(3) if _state[i][j] is None]
         return moves
 
-    def mark(self, next_move):
-        if not isinstance(next_move, str):
-            next_move = str(next_move)
-        self._state = self._states[next_move]
+    def mark(self, next_move, mark):
+        state = self._state.BOARD
+        if not isinstance(state, list):
+            state = eval(state)
+        i = (next_move - 1) // 3
+        j = (next_move - 1) % 3
+        assert i * 3 + j + 1 == next_move
+        assert(state[i][j] is None)
+        state[i][j] = mark
+        self._state = self._states[str(state)]
         runtime.Board_State = self._state
-        if runtime.DEBUG:
-            State.print_state(self._state)
+        self._state.print_state()
 
 
 class State:
@@ -99,7 +143,7 @@ class State:
     def print_state(self):
         state = self.BOARD
         if not isinstance(self.BOARD, list):
-            state = list(self.BOARD)
+            state = eval(self.BOARD)
 
         a = ' ____ ____ ____'
         state_str = ""
