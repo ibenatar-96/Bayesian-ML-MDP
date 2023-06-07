@@ -33,40 +33,34 @@ class Solver:
                     i = (action_o - 1) // 3
                     j = (action_o - 1) % 3
                     next_board[i][j] = 'O'
-                    next_state = runtime.TicTacBoard.get_states()[str(next_board)]
-                    next_state_mapping = mapping[next_state]
+                    state_o = runtime.TicTacBoard.get_states()[str(next_board)]
 
-                    if next_state.is_over():
-                        if next_state.get_winner() == 'O':
+                    if state_o.is_over():
+                        if state_o.get_winner() == 'O':
                             expected_return = runtime.WIN_REWARD
-                        elif next_state.get_winner() == 'X':
+                        elif state_o.get_winner() == 'X':
                             expected_return = runtime.LOSE_REWARD
                         else:
                             expected_return = runtime.DRAW_REWARD
                     else:
                         expected_return_x = runtime.MAX  # Initialize with worst-case value for 'X'
-                        for action_x in runtime.TicTacBoard.get_possible_moves(next_state):
-                            next_next_board = copy.deepcopy(next_state.BOARD)
+                        for action_x in runtime.TicTacBoard.get_possible_moves(state_o):
+                            next_next_board = copy.deepcopy(state_o.BOARD)
                             i = (action_x - 1) // 3
                             j = (action_x - 1) % 3
                             next_next_board[i][j] = 'X'
-                            next_next_state = runtime.TicTacBoard.get_states()[str(next_next_board)]
-                            next_next_state_mapping = mapping[next_next_state]
-                            expected_return_x = min(expected_return_x, next_next_state_mapping['Value'])
+                            state_o_x = runtime.TicTacBoard.get_states()[str(next_next_board)]
+                            state_o_x_mapping = mapping[state_o_x]
+                            expected_return_x = min(expected_return_x, state_o_x_mapping['Value'])
 
                         expected_return = expected_return_x
-
-                    immediate_reward = 0
-                    if state.get_winner() == 'O':
-                        immediate_reward = runtime.IMMEDIATE_REWARD  # Add immediate reward for winning move
-                    expected_return += immediate_reward
+                    expected_return += runtime.IMMEDIATE_REWARD
 
                     if expected_return > new_value:
                         best_action = action_o
                         new_value = expected_return
 
-                        # Break if the move guarantees a win for 'O'
-                        if new_value == runtime.WIN_REWARD:
+                        if state_o.is_over() and state_o.get_winner() == 'O':
                             break
 
                 delta = max(delta, abs(mapping[state]['Value'] - new_value))
