@@ -7,7 +7,7 @@ from itertools import combinations
 import ast
 
 
-class TicTacBoard:
+class Environment:
     def __init__(self):
         self._states = self._init_states()
         if runtime.CLEAN_STATES:
