@@ -3,7 +3,6 @@ Board_State = None
 aiAgent = None
 Opponent = None
 TicTacBoard = None
-CLEAN_STATES = False
 MAX = float('+inf')
 MIN = float('-inf')
 ITERATIONS = 10000

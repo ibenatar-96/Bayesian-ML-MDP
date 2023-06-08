@@ -3,26 +3,32 @@ import time
 from functools import reduce
 import runtime
 from itertools import product
+import numpyro
+import numpyro.distributions as dist
+import jax
+import pyqlearning
 from itertools import combinations
 import ast
+import os
+
+numpyro.set_platform("cpu")
 
 
 class Environment:
     """
     Tic Tac Toe board with probabilities to mark in each square
     3x3 Matrix, each sqaure: 'X', 'O', None
-    2 Players - AI Agent, and Human that chooses next square with Uniform Prob.
-    AI Agent - 'O'
-    Human - 'X'
+    2 Players - AI Agent, and Human
+    AI Agent - 'O'; chooses next square depending on policy from Q-Learning
+    Human - 'X'; chooses next square with Uniform Prob.
     Terminal State = Winner (3 in a row / column / diagonal) or Full Board (no empty square) and Draw
     """
-    def __init__(self, real_model_parameters=None): # TODO: Add Real Model Parameters!
-        # TODO: self._real_model_parameters = real.. this is mapping with REAL numbers! not prob. dist.
-        self._states = self._init_states()
-        if runtime.CLEAN_STATES:
-            self._clean_states()
-        self._state = self._states[str([[None] * 3 for _ in range(3)])]
 
+    def __init__(self, real_model_parameters):
+        self._real_model_parameters = real_model_parameters
+        # TODO: self._real_model_parameters = real.. this is mapping with REAL numbers! not prob. dist.
+        self._states = self._init_states_space()
+        self._state = self._states[str([[None] * 3 for _ in range(3)])]
 
     def __iter__(self):
         return iter(self._states)
@@ -33,7 +39,7 @@ class Environment:
             output += str(state) + "\n"
         return output
 
-    def _init_states(self):
+    def _init_states_space(self):
         start_time = time.time()
         states = {}
         square_mark = ['X', 'O', None]
@@ -48,41 +54,8 @@ class Environment:
             print(f"Time for Creating State Space: {end_time - start_time}")
         return states
 
-    def _clean_states(self):
-        r = dict(self._states)
-        for board in r.keys():
-            board = eval(board)
-            player_x = player_o = False
-            for row in board:
-                player = row[0]
-                if all(i == player for i in row) and player is not None:
-                    if player == 'X':
-                        player_x = True
-                    elif player == 'O':
-                        player_o = True
-            for j in range(3):
-                column = [row[j] for row in board]
-                player = column[0]
-                if all(i == player for i in column) and player is not None:
-                    if player == 'X':
-                        player_x = True
-                    elif player == 'O':
-                        player_o = True
-            if board[0][0] == board[1][1] == board[2][2] and board[1][1] is not None:
-                if board[1][1] == 'X':
-                    player_x = True
-                elif board[1][1] == 'O':
-                    player_o = True
-            if board[0][2] == board[1][1] == board[2][0] and board[1][1] is not None:
-                if board[1][1] == 'X':
-                    player_x = True
-                elif board[1][1] == 'O':
-                    player_o = True
-
-            if player_x and player_o:
-                del self._states[str(board)]
-
-    def _is_terminal(self, board):
+    @staticmethod
+    def _is_terminal(board):
         for row in board:
             player = row[0]
             if all(i == player for i in row) and player is not None:
@@ -109,7 +82,6 @@ class Environment:
 
     @staticmethod
     def get_possible_moves(state=None):
-        moves = []
         _state = state
         if _state is None:
             _state = runtime.Board_State.BOARD
@@ -122,18 +94,23 @@ class Environment:
         return moves
 
     def mark(self, next_move, mark):
-        ## TODO add prob for mark
         state = self._state.BOARD
         if not isinstance(state, list):
             state = eval(state)
         i = (next_move - 1) // 3
         j = (next_move - 1) % 3
         assert i * 3 + j + 1 == next_move
-        assert(state[i][j] is None)
-        state[i][j] = mark
-        self._state = self._states[str(state)]
-        runtime.Board_State = self._state
+        assert (state[i][j] is None)
+        y = numpyro.sample('y', dist.Bernoulli(probs=self._real_model_parameters[next_move]), rng_key=jax.random.PRNGKey(int(time.time() * 1E6))).item()
+        if y > 0 or mark == 'X':
+            state[i][j] = mark
+            self._state = self._states[str(state)]
+            runtime.Board_State = self._state
+        else:
+            if runtime.DEBUG:
+                print(f"Failed to Mark '{mark}' in Square: {next_move}")
         self._state.print_state()
+
 
 
 class State:

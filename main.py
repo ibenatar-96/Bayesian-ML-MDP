@@ -6,7 +6,10 @@ import runtime
 
 
 def init_env():
-    runtime.TicTacBoard = environment.Environment()
+    real_model_parameters = {1: 0.1, 2: 1.0, 3: 1.0, 4: 1.0, 5: 0.2, 6: 1.0, 7: 1.0, 8: 1.0, 9: 1.0}
+    real_model_parameters_2 = {1: 0.1, 2: 0.1, 3: 0.1, 4: 0.6, 5: 0.2, 6: 0.7, 7: 0.1, 8: 0.5, 9: 0.6}
+
+    runtime.TicTacBoard = environment.Environment(real_model_parameters_2)
     runtime.Board_State = runtime.TicTacBoard.get_state()
     runtime.aiAgent = agents.aiAgent()
     runtime.Opponent = users.Human()
