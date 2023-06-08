@@ -1,15 +1,15 @@
-import Agents
-import Users
-import Board
-from Agents import *
+import agents
+import users
+import environment
+from agents import *
 import runtime
 
 
 def init_env():
-    runtime.TicTacBoard = Board.TicTacBoard()
+    runtime.TicTacBoard = environment.Environment()
     runtime.Board_State = runtime.TicTacBoard.get_state()
-    runtime.aiAgent = Agents.aiAgent()
-    runtime.Opponent = Users.Human()
+    runtime.aiAgent = agents.aiAgent()
+    runtime.Opponent = users.Human()
 
 
 def main():

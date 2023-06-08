@@ -1,14 +1,17 @@
 import runtime
-import Board
+import environment
 import copy
 
 
 class Solver:
+    """
+    This is the solver...
+    """
     def __init__(self, model_parameters):
         self._mapping = {}
         self._model_parameters = model_parameters
 
-    def solve(self):
+    def solve(self): # This is solver
         mapping = {state: {'Board': state.BOARD, 'Value': float('-inf'), 'Action': None} for state in
                    runtime.TicTacBoard.get_states().values()}
 

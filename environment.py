@@ -8,11 +8,21 @@ import ast
 
 
 class Environment:
-    def __init__(self):
+    """
+    Tic Tac Toe board with probabilities to mark in each square
+    3x3 Matrix, each sqaure: 'X', 'O', None
+    2 Players - AI Agent, and Human that chooses next square with Uniform Prob.
+    AI Agent - 'O'
+    Human - 'X'
+    Terminal State = Winner (3 in a row / column / diagonal) or Full Board (no empty square) and Draw
+    """
+    def __init__(self, real_model_parameters=None): # TODO: Add Real Model Parameters!
+        # TODO: self._real_model_parameters = real.. this is mapping with REAL numbers! not prob. dist.
         self._states = self._init_states()
         if runtime.CLEAN_STATES:
             self._clean_states()
         self._state = self._states[str([[None] * 3 for _ in range(3)])]
+
 
     def __iter__(self):
         return iter(self._states)
@@ -112,6 +122,7 @@ class Environment:
         return moves
 
     def mark(self, next_move, mark):
+        ## TODO add prob for mark
         state = self._state.BOARD
         if not isinstance(state, list):
             state = eval(state)
