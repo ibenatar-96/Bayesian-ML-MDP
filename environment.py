@@ -6,12 +6,11 @@ from itertools import product
 import numpyro
 import numpyro.distributions as dist
 import jax
-import pyqlearning
 from itertools import combinations
 import ast
 import os
 
-numpyro.set_platform("cpu")
+# numpyro.set_platform("cpu")
 
 
 class Environment:

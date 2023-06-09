@@ -3,7 +3,7 @@ from random import sample
 import solver
 
 
-class aiAgent:
+class AiAgent:
     def __init__(self, model_parameters=None): # TODO: Add model parameters
         self._mark = 'O'
         self._turn = False

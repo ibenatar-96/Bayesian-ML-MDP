@@ -1,7 +1,6 @@
 import agents
 import users
 import environment
-from agents import *
 import runtime
 
 
@@ -11,7 +10,7 @@ def init_env():
 
     runtime.TicTacBoard = environment.Environment(real_model_parameters_2)
     runtime.Board_State = runtime.TicTacBoard.get_state()
-    runtime.aiAgent = agents.aiAgent()
+    runtime.aiAgent = agents.AiAgent()
     runtime.Opponent = users.Human()
 
 
