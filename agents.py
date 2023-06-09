@@ -14,11 +14,3 @@ class AiAgent:
     def next_move(self, action_parameter=None):
         n_move = self._policy[runtime.Board_State]['Action']
         return n_move
-        # if action_parameter is None:
-        #     return
-        # if action_parameter == 0:
-        #     # need to wait for human to mark
-        #     pass
-        # else:
-        #     b_v = dist.Bernoulli(self.model_parameters[action_parameter]).sample()
-        #     print(b_v)

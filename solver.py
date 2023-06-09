@@ -11,9 +11,12 @@ class Solver:
         self._mapping = {}
         self._model_parameters = model_parameters
 
+    def run(self):
+        pass
+
     def solve(self): # This is solver
         mapping = {state: {'Board': state.BOARD, 'Value': float('-inf'), 'Action': None} for state in
-                   runtime.TicTacBoard.get_states().values()}
+                   runtime.Environment.get_states().values()}
 
         for _ in range(runtime.ITERATIONS):
             delta = 0
@@ -31,12 +34,12 @@ class Solver:
                 new_value = runtime.MIN
                 best_action = None
 
-                for action_o in runtime.TicTacBoard.get_possible_moves(state):
+                for action_o in runtime.Environment.get_possible_moves(state):
                     next_board = copy.deepcopy(state.BOARD)
                     i = (action_o - 1) // 3
                     j = (action_o - 1) % 3
                     next_board[i][j] = 'O'
-                    state_o = runtime.TicTacBoard.get_states()[str(next_board)]
+                    state_o = runtime.Environment.get_states()[str(next_board)]
 
                     if state_o.is_over():
                         if state_o.get_winner() == 'O':
@@ -47,12 +50,12 @@ class Solver:
                             expected_return = runtime.DRAW_REWARD
                     else:
                         expected_return_x = runtime.MAX  # Initialize with worst-case value for 'X'
-                        for action_x in runtime.TicTacBoard.get_possible_moves(state_o):
+                        for action_x in runtime.Environment.get_possible_moves(state_o):
                             next_next_board = copy.deepcopy(state_o.BOARD)
                             i = (action_x - 1) // 3
                             j = (action_x - 1) % 3
                             next_next_board[i][j] = 'X'
-                            state_o_x = runtime.TicTacBoard.get_states()[str(next_next_board)]
+                            state_o_x = runtime.Environment.get_states()[str(next_next_board)]
                             state_o_x_mapping = mapping[state_o_x]
                             expected_return_x = min(expected_return_x, state_o_x_mapping['Value'])
 

@@ -56,16 +56,15 @@ class Environment:
     @staticmethod
     def _is_terminal(board):
         for row in board:
-            player = row[0]
-            if all(i == player for i in row) and player is not None:
-                return True, player
+            if all(i == row[0] for i in row) and row[0] is not None:
+                return True, row[0]
         for j in range(3):
             column = [row[j] for row in board]
-            player = column[0]
-            if all(i == player for i in column) and player is not None:
-                return True, player
-        if ((board[0][0] == board[1][1] == board[2][2]) or (board[0][2] == board[1][1] == board[2][0])) and board[1][
-            1] is not None:
+            if all(i == column[0] for i in column) and column[0] is not None:
+                return True, column[0]
+        if ((board[0][0] == board[1][1] == board[2][2]) or
+            (board[0][2] == board[1][1] == board[2][0])) and \
+                board[1][1] is not None:
             return True, board[1][1]
         for i in range(3):
             for j in range(3):
@@ -92,8 +91,10 @@ class Environment:
         moves = [(i * 3 + j + 1) for i in range(3) for j in range(3) if _state[i][j] is None]
         return moves
 
-    def mark(self, next_move, mark):
-        state = self._state.BOARD
+    def mark(self, next_move, mark, state=None):
+        reward = -1
+        if state is None:
+            state = self._state.BOARD
         if not isinstance(state, list):
             state = eval(state)
         i = (next_move - 1) // 3
@@ -106,9 +107,11 @@ class Environment:
             self._state = self._states[str(state)]
             runtime.Board_State = self._state
         else:
+            reward = -2
             if runtime.DEBUG:
                 print(f"Failed to Mark '{mark}' in Square: {next_move}")
         self._state.print_state()
+        return self._state,reward,self._state
 
 
 
@@ -150,3 +153,6 @@ class State:
         if self.TERM:
             print(f"WINNER: {self.WINNER}")
         print("\n")
+
+    def mark(self, next_move, mark):
+        return Environment.mark(next_move,mark,self.BOARD)
