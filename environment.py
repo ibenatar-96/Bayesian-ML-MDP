@@ -10,20 +10,21 @@ from itertools import combinations
 import ast
 import os
 
+
 # numpyro.set_platform("cpu")
 
 
-class Environment:
+class TicTacToe:
     """
     Tic Tac Toe board with probabilities to mark in each square
-    3x3 Matrix, each sqaure: 'X', 'O', None
+    3x3 Matrix, each cell: 'X', 'O', None
     2 Players - AI Agent, and Human
     AI Agent - 'O'; chooses next square depending on policy from Q-Learning
     Human - 'X'; chooses next square with Uniform Prob.
     Terminal State = Winner (3 in a row / column / diagonal) or Full Board (no empty square) and Draw
     """
 
-    def __init__(self, real_model_parameters):
+    def __init__(self, real_model_parameters=runtime.REAL_MODEL_PARAMETERS):
         self._real_model_parameters = real_model_parameters
         # TODO: self._real_model_parameters = real.. this is mapping with REAL numbers! not prob. dist.
         self._states = self._init_states_space()
@@ -78,11 +79,14 @@ class Environment:
     def get_states(self):
         return self._states
 
+    def update_state(self, state):
+        self._state = state
+
     @staticmethod
-    def get_possible_moves(state=None):
+    def get_possible_moves(state):
         _state = state
-        if _state is None:
-            _state = runtime.Board_State.BOARD
+        # if _state is None:
+        #     _state = runtime.Board_State.BOARD
         if isinstance(_state, State):
             _state = _state.BOARD
         if not isinstance(_state, list):
@@ -91,28 +95,31 @@ class Environment:
         moves = [(i * 3 + j + 1) for i in range(3) for j in range(3) if _state[i][j] is None]
         return moves
 
+    def get_real_model_parameters(self):
+        return self._real_model_parameters
+
     def mark(self, next_move, mark, state=None):
         reward = -1
         if state is None:
             state = self._state.BOARD
-        if not isinstance(state, list):
-            state = eval(state)
         i = (next_move - 1) // 3
         j = (next_move - 1) % 3
         assert i * 3 + j + 1 == next_move
         assert (state[i][j] is None)
-        y = numpyro.sample('y', dist.Bernoulli(probs=self._real_model_parameters[next_move]), rng_key=jax.random.PRNGKey(int(time.time() * 1E6))).item()
+        y = numpyro.sample('y', dist.Bernoulli(probs=self._real_model_parameters[next_move]),
+                           rng_key=jax.random.PRNGKey(int(time.time() * 1E6))).item()
         if y > 0 or mark == 'X':
             state[i][j] = mark
-            self._state = self._states[str(state)]
-            runtime.Board_State = self._state
+            new_state = self.get_states()[str(state)]
+            self.update_state(new_state)
+            # runtime.Board_State = new_state
         else:
             reward = -2
             if runtime.DEBUG:
                 print(f"Failed to Mark '{mark}' in Square: {next_move}")
-        self._state.print_state()
-        return self._state,reward,self._state
-
+        if runtime.DEBUG:
+            self.get_state().print_state()
+        return self.get_state(), reward
 
 
 class State:
@@ -154,5 +161,8 @@ class State:
             print(f"WINNER: {self.WINNER}")
         print("\n")
 
-    def mark(self, next_move, mark):
-        return Environment.mark(next_move,mark,self.BOARD)
+    # def mark(self, next_move, mark):
+    #     return TicTacToe.mark(next_move, mark, self.BOARD)
+
+    # def get_possible_moves(self):
+    #     return TicTacToe.get_possible_moves(self)
