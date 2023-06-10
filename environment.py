@@ -84,15 +84,16 @@ class TicTacToe:
         self._state = self.get_states()[str(state.BOARD)]
         # self.get_state().print_state()
 
-    @staticmethod
-    def get_possible_moves(state):
+    def get_possible_moves(self, state=None):
         _state = state
+        if _state is None:
+            _state = self.get_state
         # if _state is None:
         #     _state = runtime.Board_State.BOARD
         if isinstance(_state, State):
             _state = _state.BOARD
-        if not isinstance(_state, list):
-            _state = eval(_state)
+        # if not isinstance(_state, list):
+        #     _state = eval(_state)
 
         moves = [(i * 3 + j + 1) for i in range(3) for j in range(3) if _state[i][j] is None]
         return moves
@@ -113,6 +114,12 @@ class TicTacToe:
         if y > 0 or mark == 'X':
             state[i][j] = mark
             new_state = self.get_states()[str(state)]
+            if new_state.is_over() and new_state.get_winner() == 'X':
+                reward += runtime.LOSE_REWARD
+            elif new_state.is_over() and new_state.get_winner() == 'O':
+                reward += runtime.WIN_REWARD
+            elif new_state.is_over():
+                reward += runtime.DRAW_REWARD
             self.update_state(new_state)
             # runtime.Board_State = new_state
         else:

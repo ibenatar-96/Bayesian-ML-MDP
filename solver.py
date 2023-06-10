@@ -10,6 +10,7 @@ import time
 import random
 from tqdm import tqdm
 import os
+from random import sample
 
 
 class Solver:
@@ -22,19 +23,25 @@ class Solver:
         self._model_parameters = model_parameters
 
     def run(self):
-        if os.path.exists("Q_values.txt") and os.path.isfile("Q_values.txt"):
-            # TODO: load Q_values into policy..
-            pass
         policy = self.solve(self._model_parameters)
-        # while not runtime.Board_State.is_over():
-        #     break
+        board = environment.TicTacToe()
+        while not board.get_state().is_over():
+            opponent_moves = board.get_possible_moves(board.get_state())
+            n_move = sample(opponent_moves, 1)
+            board.mark(n_move,'X')
+            board.get_state().print_state()
+            if board.get_state().is_over():
+                break
+            agent_move = self.choose_action(board.get_state(),board.get_possible_moves(),policy)
+            board.mark(agent_move, 'O')
+            board.get_state().print_state()
 
     def solve(self, model_parameters):
         board = environment.TicTacToe()
         Q = {}
         for state in board.get_states().values():
             for action in board.get_possible_moves(state):
-                Q[(str(state.BOARD), action)] = 0.0
+                Q[(str(state.BOARD), action)] = None
         alpha = runtime.ALPHA
         epsilon = runtime.EPSILON
         discount_factor = runtime.DISCOUNT_FACTOR
@@ -68,19 +75,34 @@ class Solver:
             else:
                 raise Exception(f"State: {_state.BOARD} has no action {_action}")
 
-        for _ in tqdm(range(iterations), desc='tqdm() Progress Bar'):
+        for i in tqdm(range(iterations), desc='Q-Learning'):
             board.reset()
-            while not board.get_state().is_over() and _ % 100 != 0:
+            while not board.get_state().is_over():
+                if i % 2 == 0:
+                    mark = 'X'
+                else:
+                    mark = 'O'
                 state = copy.deepcopy(board.get_state())
                 available_moves = board.get_possible_moves(state)
                 action = __choose_action(state, available_moves)
-                next_state, reward = board.mark(action, 'O')
+                next_state, reward = board.mark(action, mark)
                 __update_Q_value(state, action, reward, next_state, board)
                 board.update_state(next_state)
         with open("Q_values.txt", "w") as qd:
-            list_of_strings = [f'{key[0]}, {key[1]}: {Q[key]}' for key in Q.keys()]
+            list_of_strings = [f'{key[0]}, {key[1]}: {Q[key]}' for key in Q.keys() if Q[key] is not None]
             [qd.write(f'{st}\n') for st in list_of_strings]
         return Q
 
     def get_policy(self):
         return self._mapping
+
+    def choose_action(self, state, possible_moves, policy):
+        Q_values = [policy(state, _action) for _action in possible_moves]
+        max_Q = max(Q_values)
+        if Q_values.count(max_Q) > 1:
+            best_moves = [i for i in range(len(possible_moves)) if Q_values[i] == max_Q]
+            i = random.choice(best_moves)
+        else:
+            i = Q_values.index(max_Q)
+        return possible_moves[i]
+
