@@ -29,6 +29,7 @@ class TicTacToe:
         # TODO: self._real_model_parameters = real.. this is mapping with REAL numbers! not prob. dist.
         self._states = self._init_states_space()
         self._state = self._states[str([[None] * 3 for _ in range(3)])]
+        runtime.ORIGINAL_STATES = copy.deepcopy(self._states)
 
     def __iter__(self):
         return iter(self._states)
@@ -80,7 +81,8 @@ class TicTacToe:
         return self._states
 
     def update_state(self, state):
-        self._state = state
+        self._state = self.get_states()[str(state.BOARD)]
+        # self.get_state().print_state()
 
     @staticmethod
     def get_possible_moves(state):
@@ -101,7 +103,7 @@ class TicTacToe:
     def mark(self, next_move, mark, state=None):
         reward = -1
         if state is None:
-            state = self._state.BOARD
+            state = copy.deepcopy(self.get_state().BOARD)
         i = (next_move - 1) // 3
         j = (next_move - 1) % 3
         assert i * 3 + j + 1 == next_move
@@ -120,6 +122,15 @@ class TicTacToe:
         if runtime.DEBUG:
             self.get_state().print_state()
         return self.get_state(), reward
+
+    def reset(self):
+        # self.update_state()
+        init_str_state = str([[None] * 3 for _ in range(3)])
+        init_state = self._states[init_str_state]
+        self.update_state(init_state)
+        if runtime.DEBUG:
+            print("Reset:")
+            self._state.print_state()
 
 
 class State:
@@ -160,9 +171,3 @@ class State:
         if self.TERM:
             print(f"WINNER: {self.WINNER}")
         print("\n")
-
-    # def mark(self, next_move, mark):
-    #     return TicTacToe.mark(next_move, mark, self.BOARD)
-
-    # def get_possible_moves(self):
-    #     return TicTacToe.get_possible_moves(self)

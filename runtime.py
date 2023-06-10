@@ -1,10 +1,11 @@
 from jax import random
-DEBUG = True
+DEBUG = False
 Board_State = None
 aiAgent = None
 Opponent = None
 TicTacToe = None
-REAL_MODEL_PARAMETERS = {1: 0.1, 2: 1.0, 3: 1.0, 4: 1.0, 5: 0.2, 6: 1.0, 7: 1.0, 8: 1.0, 9: 1.0}
+ORIGINAL_STATES = None
+REAL_MODEL_PARAMETERS = {1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0, 5: 1.0, 6: 1.0, 7: 1.0, 8: 1.0, 9: 1.0}
 MAX = float('+inf')
 MIN = float('-inf')
 ITERATIONS = 10000

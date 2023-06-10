@@ -26,14 +26,15 @@ class Solver:
             # TODO: load Q_values into policy..
             pass
         policy = self.solve(self._model_parameters)
-        while not runtime.Board_State.is_over():
-            break
+        # while not runtime.Board_State.is_over():
+        #     break
 
     def solve(self, model_parameters):
+        board = environment.TicTacToe()
         Q = {}
-        for state in runtime.TicTacToe.get_states().values():
-            for action in runtime.TicTacToe.get_possible_moves(state):
-                Q[(state, action)] = 0.0
+        for state in board.get_states().values():
+            for action in board.get_possible_moves(state):
+                Q[(str(state.BOARD), action)] = 0.0
         alpha = runtime.ALPHA
         epsilon = runtime.EPSILON
         discount_factor = runtime.DISCOUNT_FACTOR
@@ -53,32 +54,31 @@ class Solver:
             return _available_moves[i]
 
         def __get_Q_value(_state, _action):
-            if (_state, _action) not in Q:
-                Q[(_state, _action)] = 0.0
-            return Q[(_state, _action)]
+            if (str(_state.BOARD), _action) not in Q:
+                raise Exception(f"State: {_state.BOARD}, Action: {_action} not in Q")
+            return Q[(str(_state.BOARD), _action)]
 
         def __update_Q_value(_state, _action, _reward, _next_state, _board):
             next_Q_values = [__get_Q_value(_next_state, next_action) for next_action in
                              _board.get_possible_moves(_next_state)]
             max_next_Q = max(next_Q_values) if next_Q_values else 0.0
-            if (_state, _action) in Q:
-                Q[(_state, _action)] += alpha * (
-                        _reward + discount_factor * max_next_Q - Q[(_state, _action)])
+            if (str(_state.BOARD), _action) in Q:
+                Q[(str(_state.BOARD), _action)] += alpha * (
+                        _reward + discount_factor * max_next_Q - Q[(str(_state.BOARD), _action)])
             else:
-                print(f"State: {_state.BOARD} has no action {_action}")
-                raise Exception("why..")
+                raise Exception(f"State: {_state.BOARD} has no action {_action}")
 
         for _ in tqdm(range(iterations), desc='tqdm() Progress Bar'):
-            board = environment.TicTacToe()
-            while not board.get_state().is_over():
-                available_moves = board.get_possible_moves(board.get_state())
-                action = __choose_action(board.get_state(), available_moves)
-                prev_state = board.get_state()
+            board.reset()
+            while not board.get_state().is_over() and _ % 100 != 0:
+                state = copy.deepcopy(board.get_state())
+                available_moves = board.get_possible_moves(state)
+                action = __choose_action(state, available_moves)
                 next_state, reward = board.mark(action, 'O')
-                __update_Q_value(prev_state, action, reward, next_state, board)
+                __update_Q_value(state, action, reward, next_state, board)
                 board.update_state(next_state)
         with open("Q_values.txt", "w") as qd:
-            list_of_strings = [f'{key[0].BOARD} : {key[1]}' for key in Q.keys()]
+            list_of_strings = [f'{key[0]}, {key[1]}: {Q[key]}' for key in Q.keys()]
             [qd.write(f'{st}\n') for st in list_of_strings]
         return Q
 
