@@ -82,6 +82,10 @@ class Solver:
             if (str(_state.BOARD), _action) in Q:
                 Q[(str(_state.BOARD), _action)] += alpha * (
                         _reward + discount_factor * max_next_Q - Q[(str(_state.BOARD), _action)])
+
+                # if str(_state.BOARD) == [['O', None, 'X'], [None, None, 'X'], ['O', 'X', 'O']]:
+                #     print(f"Q[{str(_state.BOARD)},{_action}] = {Q[(str(_state.BOARD), _action)]}")
+
             else:
                 raise Exception(f"State: {_state.BOARD} has no action {_action}")
 
@@ -89,6 +93,7 @@ class Solver:
             board.reset()
             i = 0
             while not board.get_state().is_over():
+                played_twice = False
                 if i % 2 == 0:
                     mark = 'X'
                     second_mark = 'O'
@@ -101,11 +106,14 @@ class Solver:
                 next_state, reward = board.mark(action, mark)
                 if not next_state.is_over():
                     state_ = copy.deepcopy(next_state)
-                    available_moves = board.get_possible_moves(state_)
-                    action = __choose_action(state_, available_moves, second_mark)
-                    next_state_, reward = board.mark(action, second_mark)
-                if state.BOARD == [['X', None, 'X'], ['O', None, None], [None, None, None]]:
-                    print(f"Next state: {next_state.BOARD}, reward: {reward}")
+                    available_moves_ = board.get_possible_moves(state_)
+                    action_ = __choose_action(state_, available_moves_, second_mark)
+                    next_state_, reward = board.mark(action_, second_mark)
+                    played_twice = True
+                if state.BOARD == [[None, None, 'X'], [None, 'O', None], ['X', 'O', 'X']]:
+                    print(f"Next state: {next_state.BOARD}, reward: {reward}, mark: {mark}")
+                # if mark == 'X' and played_twice:
+                #     __update_Q_value(next_state, action_, reward, next_state_, board)
                 __update_Q_value(state, action, reward, next_state, board)
                 board.update_state(next_state)
                 i += 1
