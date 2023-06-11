@@ -1,5 +1,6 @@
 from jax import random
 DEBUG = False
+SPARSE = False
 Board_State = None
 aiAgent = None
 Opponent = None
@@ -14,7 +15,8 @@ LOSE_REWARD = -100
 DRAW_REWARD = -50
 DISCOUNT_FACTOR = 1.0
 ALPHA = 0.5
-EPSILON = 0.1
+EPSILON = 0.2
 THETA = 1e-5
 IMMEDIATE_REWARD = -1
 SEED = random.PRNGKey(0)
+
