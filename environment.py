@@ -41,6 +41,15 @@ class TicTacToe:
         return output
 
     def _init_states_space(self):
+        """
+        Creates State Space for all possible states, 3^9 states possible (3 options for each of 9 cells - 'X', 'O' or None).
+        States is a mapping between state is which is presented by String of the board (i.e. - [['X','O',None],
+                                                                                            ['O',None,None],
+                                                                                            ['X','O','X']])
+        to State Objects which are defined by - TERM: Whether or not state is terminal state (exists winner / full board and draw)
+                                                WINNER: Who is the winner of this State Object - 'X' / 'O' / None
+                                                BOARD: String representation of the board (same as example above).
+        """
         start_time = time.time()
         states = {}
         square_mark = ['X', 'O', None]
@@ -57,6 +66,10 @@ class TicTacToe:
 
     @staticmethod
     def _is_terminal(board):
+        """
+        Checks whether or not board is terminal - (3 in a row / column / diagonal) or Full Board (no empty square) and Draw.
+        Return value: 2 values - Terminal (Boolean) and Winner ('X' / 'O' / None)
+        """
         for row in board:
             if all(i == row[0] for i in row) and row[0] is not None:
                 return True, row[0]
@@ -85,16 +98,14 @@ class TicTacToe:
         # self.get_state().print_state()
 
     def get_possible_moves(self, state=None):
+        """
+        Returns a list of all possible moves - possible moves are all cells marked as None.
+        """
         _state = state
         if _state is None:
             _state = self.get_state
-        # if _state is None:
-        #     _state = runtime.Board_State.BOARD
         if isinstance(_state, State):
             _state = _state.BOARD
-        # if not isinstance(_state, list):
-        #     _state = eval(_state)
-
         moves = [(i * 3 + j + 1) for i in range(3) for j in range(3) if _state[i][j] is None]
         return moves
 
@@ -102,6 +113,13 @@ class TicTacToe:
         return self._real_model_parameters
 
     def mark(self, next_move, mark, state=None):
+        """
+        Marks cell {next_move} with probability self._real_model_parameters[{next_move}].
+        i.e. self._real_model_parameters = {1: 1.0, 2: 1.0, 3: 0.7, 4: 1.0, 5: 0.5, ... , 9: 1.0} and next_move = 3, mark = 'O',
+        so with probability 0.7 cell 3 will be marked with 'O'.
+        Return Value: returns Reward depending on ending state (State can change if sample value is < prob, else stays the same).
+                      Also returns the Current State (New State if changed, last State if didn't change).
+        """
         reward = -1
         if state is None:
             state = copy.deepcopy(self.get_state().BOARD)
@@ -131,7 +149,6 @@ class TicTacToe:
         return self.get_state(), reward
 
     def reset(self):
-        # self.update_state()
         init_str_state = str([[None] * 3 for _ in range(3)])
         init_state = self._states[init_str_state]
         self.update_state(init_state)
@@ -141,6 +158,9 @@ class TicTacToe:
 
 
 class State:
+    """
+
+    """
     def __init__(self, term=False, winner=None, board=None):
         self.TERM = term
         self.WINNER = winner
@@ -155,7 +175,7 @@ class State:
     def get_winner(self):
         return self.WINNER
 
-    def print_state(self):
+    def print_state(self, file=None):
         state = self.BOARD
         if not isinstance(self.BOARD, list):
             state = eval(self.BOARD)
@@ -173,8 +193,8 @@ class State:
                 state_str += f" {mark}  |"
             state_str += f"\n"
         state_str = f"{state_str}{a}"
-        print(state_str)
-        print(f"TERM: {self.TERM}")
+        print(state_str, file=file)
+        print(f"TERM: {self.TERM}", file=file)
         if self.TERM:
-            print(f"WINNER: {self.WINNER}")
-        print("\n")
+            print(f"WINNER: {self.WINNER}", file=file)
+        print("\n", file=file)

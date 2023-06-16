@@ -10,6 +10,7 @@ REAL_MODEL_PARAMETERS = {1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0, 5: 1.0, 6: 1.0, 7: 1.0,
 MAX = float('+inf')
 MIN = float('-inf')
 ITERATIONS = 50000
+GAMES_TEST = 1000
 WIN_REWARD = 10
 LOSE_REWARD = -10
 DRAW_REWARD = -5

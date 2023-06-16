@@ -1,13 +1,16 @@
 import runtime
-from random import sample
+import random
 
 
 class Human:
-    def __init__(self):
+    def __init__(self, environment):
         self._mark = 'X'
+        self._environment = environment
 
-    def next_move(self):
+    def play(self):
+        if self._environment.get_state().is_over():
+            return
         p_moves = runtime.TicTacToe.get_possible_moves()
-        n_move = sample(p_moves, 1)
-        return n_move[0]
+        n_move = random.choice(p_moves)
+        self._environment.mark(n_move, 'X')
         pass
