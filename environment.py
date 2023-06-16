@@ -1,4 +1,5 @@
 import copy
+import sys
 import time
 from functools import reduce
 import runtime
@@ -44,8 +45,8 @@ class TicTacToe:
         """
         Creates State Space for all possible states, 3^9 states possible (3 options for each of 9 cells - 'X', 'O' or None).
         States is a mapping between state is which is presented by String of the board (i.e. - [['X','O',None],
-                                                                                            ['O',None,None],
-                                                                                            ['X','O','X']])
+                                                                                               ['O',None,None],
+                                                                                               ['X','O','X']])
         to State Objects which are defined by - TERM: Whether or not state is terminal state (exists winner / full board and draw)
                                                 WINNER: Who is the winner of this State Object - 'X' / 'O' / None
                                                 BOARD: String representation of the board (same as example above).
@@ -67,7 +68,7 @@ class TicTacToe:
     @staticmethod
     def _is_terminal(board):
         """
-        Checks whether or not board is terminal - (3 in a row / column / diagonal) or Full Board (no empty square) and Draw.
+        Checks whether board is terminal - (3 in a row / column / diagonal) or Full Board (no empty square) and Draw.
         Return value: 2 values - Terminal (Boolean) and Winner ('X' / 'O' / None)
         """
         for row in board:
@@ -103,7 +104,7 @@ class TicTacToe:
         """
         _state = state
         if _state is None:
-            _state = self.get_state
+            _state = self.get_state()
         if isinstance(_state, State):
             _state = _state.BOARD
         moves = [(i * 3 + j + 1) for i in range(3) for j in range(3) if _state[i][j] is None]
@@ -159,7 +160,12 @@ class TicTacToe:
 
 class State:
     """
-
+    State Object, is composed of: TERM - (Boolean) Is the State Object a TERMINAL State.
+                                  WINNER - 'X', 'O', None. Depending on the board.
+                                  BOARD - String representation of the state board, i.e.       [['X','O',None],
+                                                                                               ['O',None,None],
+                                                                                               ['X','O','X']])
+    TERMINAL STATE:  True = 3 in a row / diagonal / column, or No empty cell & No winner. False = Every other case.
     """
     def __init__(self, term=False, winner=None, board=None):
         self.TERM = term
@@ -175,7 +181,7 @@ class State:
     def get_winner(self):
         return self.WINNER
 
-    def print_state(self, file=None):
+    def print_state(self, file=sys.stdout):
         state = self.BOARD
         if not isinstance(self.BOARD, list):
             state = eval(self.BOARD)
