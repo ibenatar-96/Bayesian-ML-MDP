@@ -1,6 +1,6 @@
 import os.path
 import runtime
-import environment
+# import environment
 import copy
 from users import Human
 from agents import AiAgent
@@ -21,9 +21,10 @@ class Solver:
     run() is used for running and testing policy computed.
     """
 
-    def __init__(self, model_parameters):
+    def __init__(self, model_parameters, environment):
         self._mapping = {}
         self._model_parameters = model_parameters
+        self._environment = environment
 
     def run(self):
         """
@@ -36,7 +37,7 @@ class Solver:
             policy = self._load_policy("Q_VALUES.txt")
         else:
             policy = self.solve(self._model_parameters)
-        board = environment.TicTacToe()
+        board = self._environment.TicTacToe()
         lost_games = []
         opponent = Human(board)
         ai_agent = AiAgent(board, policy)
@@ -50,7 +51,6 @@ class Solver:
                 game_log.append(board.get_state())
             if board.get_state().get_winner() != 'O':
                 lost_games.append(game_log)
-            break
         print(f"Total Games won: {runtime.GAMES_TEST - len(lost_games)}/{runtime.GAMES_TEST}")
         with open("LOST_GAMES.txt", "a") as lg:
             for lost_game in lost_games:
@@ -65,7 +65,7 @@ class Solver:
         Return value - Policy Q, that contains a mapping between (state, action) to expected value in case of taking that
         action from that particular state.
         """
-        board = environment.TicTacToe()
+        board = self._environment.TicTacToe()
         Q = {}
         for state in board.get_states().values():
             for action in board.get_possible_moves(state):

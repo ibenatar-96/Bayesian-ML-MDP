@@ -19,7 +19,7 @@ def init_env():
 def main():
     init_env()
     model_parameters = {1: 0.1, 2: 1.0, 3: 1.0, 4: 1.0, 5: 0.5, 6: 1.0, 7: 1.0, 8: 1.0, 9: 1.0}
-    slvr = solver.Solver(model_parameters)
+    slvr = solver.Solver(model_parameters, environment)
     slvr.run()
     # while not runtime.Board_State.is_over():
     #     runtime.TicTacToe.mark(runtime.Opponent.next_move(), 'X')
