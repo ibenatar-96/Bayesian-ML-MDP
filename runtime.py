@@ -1,16 +1,17 @@
-from jax import random
 DEBUG = False
+DEBUG_BOARD = False
+PLOT = False
 SPARSE = False
 Board_State = None
 aiAgent = None
 Opponent = None
 TicTacToe = None
 ORIGINAL_STATES = None
-REAL_MODEL_PARAMETERS = {1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0, 5: 1.0, 6: 1.0, 7: 1.0, 8: 1.0, 9: 1.0}
+REAL_MODEL_PARAMETERS = {1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0, 5: 0.3, 6: 1.0, 7: 1.0, 8: 1.0, 9: 1.0}
 MAX = float('+inf')
 MIN = float('-inf')
 ITERATIONS = 10000
-GAMES_TEST = 1000
+GAMES_TEST = int(ITERATIONS / 5)
 WIN_REWARD = 10
 LOSE_REWARD = -10
 DRAW_REWARD = -5
@@ -19,5 +20,5 @@ ALPHA = 0.5
 EPSILON = 0.3
 THETA = 1e-5
 IMMEDIATE_REWARD = -1
-SEED = random.PRNGKey(0)
-
+INIT_BELIEF_PROB = 0.8
+INIT_OBSERVATIONS = [1, 1, 1, 0, 1, 1, 1, 1, 1, 0]

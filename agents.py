@@ -12,10 +12,11 @@ class AiAgent:
 
     def play(self, action_parameter=None):
         if self._environment.get_state().is_over():
-            return
+            return None, None, None
         agent_move = self.choose_action(self._environment.get_state(),
                                         self._environment.get_possible_moves(self._environment.get_state()), self._policy)
-        self._environment.mark(agent_move, 'O')
+        next_state, reward = self._environment.mark(agent_move, 'O')
+        return agent_move, next_state, reward
 
     @staticmethod
     def choose_action(state, possible_moves, policy):

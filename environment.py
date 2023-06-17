@@ -25,9 +25,8 @@ class TicTacToe:
     Terminal State = Winner (3 in a row / column / diagonal) or Full Board (no empty square) and Draw
     """
 
-    def __init__(self, real_model_parameters=runtime.REAL_MODEL_PARAMETERS):
-        self._real_model_parameters = real_model_parameters
-        # TODO: self._real_model_parameters = real.. this is mapping with REAL numbers! not prob. dist.
+    def __init__(self, model_parameters=runtime.REAL_MODEL_PARAMETERS):
+        self._model_parameters = model_parameters
         self._states = self._init_states_space()
         self._state = self._states[str([[None] * 3 for _ in range(3)])]
         runtime.ORIGINAL_STATES = copy.deepcopy(self._states)
@@ -111,12 +110,12 @@ class TicTacToe:
         return moves
 
     def get_real_model_parameters(self):
-        return self._real_model_parameters
+        return self._model_parameters
 
     def mark(self, next_move, mark, state=None):
         """
-        Marks cell {next_move} with probability self._real_model_parameters[{next_move}].
-        i.e. self._real_model_parameters = {1: 1.0, 2: 1.0, 3: 0.7, 4: 1.0, 5: 0.5, ... , 9: 1.0} and next_move = 3, mark = 'O',
+        Marks cell {next_move} with probability self._model_parameters[{next_move}].
+        i.e. self._model_parameters = {1: 1.0, 2: 1.0, 3: 0.7, 4: 1.0, 5: 0.5, ... , 9: 1.0} and next_move = 3, mark = 'O',
         so with probability 0.7 cell 3 will be marked with 'O'.
         Return Value: returns Reward depending on ending state (State can change if sample value is < prob, else stays the same).
                       Also returns the Current State (New State if changed, last State if didn't change).
@@ -128,7 +127,7 @@ class TicTacToe:
         j = (next_move - 1) % 3
         assert i * 3 + j + 1 == next_move
         assert (state[i][j] is None)
-        y = numpyro.sample('y', dist.Bernoulli(probs=self._real_model_parameters[next_move]),
+        y = numpyro.sample('y', dist.Bernoulli(probs=self._model_parameters[next_move]),
                            rng_key=jax.random.PRNGKey(int(time.time() * 1E6))).item()
         if y > 0 or mark == 'X':
             state[i][j] = mark
@@ -145,7 +144,7 @@ class TicTacToe:
             reward = -2
             if runtime.DEBUG:
                 print(f"Failed to Mark '{mark}' in Square: {next_move}")
-        if runtime.DEBUG:
+        if runtime.DEBUG_BOARD:
             self.get_state().print_state()
         return self.get_state(), reward
 
@@ -153,7 +152,7 @@ class TicTacToe:
         init_str_state = str([[None] * 3 for _ in range(3)])
         init_state = self._states[init_str_state]
         self.update_state(init_state)
-        if runtime.DEBUG:
+        if runtime.DEBUG_BOARD:
             print("Reset:")
             self._state.print_state()
 

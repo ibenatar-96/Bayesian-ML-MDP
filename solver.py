@@ -22,10 +22,11 @@ class Solver:
     run() is used for running and testing policy computed.
     """
 
-    def __init__(self, model_parameters, environment):
+    def __init__(self, model_parameters, environment, logger):
         self._mapping = {}
         self._model_parameters = model_parameters
         self._environment = environment
+        self._logger = logger
 
     def run(self):
         """
@@ -39,16 +40,27 @@ class Solver:
         else:
             policy = self.solve(self._model_parameters)
         board = self._environment.TicTacToe()
+        mark_logger = {1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: []}
         lost_games = []
         opponent = Human(board)
         ai_agent = AiAgent(board, policy)
+        print("Agent Playing REAL PARAMETERS Tic-Tac-Toe")
         for _ in tqdm(range(runtime.GAMES_TEST), desc='Agent Playing Tic-Tac-Toe..'):
             game_log = []
             board.reset()
             while not board.get_state().is_over():
-                opponent.play()
+                action, next_state, reward = opponent.play()
+                if action is None and next_state is None and reward is None:
+                    break
                 game_log.append(board.get_state())
-                ai_agent.play()
+                prev_state_board = copy.deepcopy(board.get_state().BOARD)
+                action, next_state, reward = ai_agent.play()
+                if action is None and next_state is None and reward is None:
+                    break
+                if next_state.BOARD != prev_state_board:
+                    mark_logger[action].append(1)
+                else:
+                    mark_logger[action].append(0)
                 game_log.append(board.get_state())
             if board.get_state().get_winner() != 'O':
                 lost_games.append(game_log)
@@ -59,12 +71,16 @@ class Solver:
                 for move in lost_game:
                     move.print_state(lg)
 
-    def play_games(self, num_of_games, policy):
-        board = self._environment.TicTacToe()
+        with open(self._logger, "w") as logger:
+            for cell, obs in mark_logger.items():
+                logger.write(f"{str(cell)}: {str(obs)}\n")
+
+    def test_play_games(self, num_of_games, policy):
+        board = self._environment.TicTacToe(model_parameters=self._model_parameters)
         won_games = 0
         opponent = Human(board)
         ai_agent = AiAgent(board, policy)
-        print(f"\n\tPlaying {num_of_games} Tic-Tac-Toe")
+        print(f"\n\tTesting {num_of_games} Tic-Tac-Toe Games")
         for _ in range(num_of_games):
             board.reset()
             while not board.get_state().is_over():
@@ -72,7 +88,7 @@ class Solver:
                 ai_agent.play()
             if board.get_state().get_winner() == 'O':
                 won_games += 1
-        print(f"\tTotal Games won: {won_games}/{runtime.GAMES_TEST}")
+        print(f"\tTotal Games Won: {won_games}/{runtime.GAMES_TEST}")
         return won_games
 
     def solve(self, model_parameters):
@@ -82,7 +98,7 @@ class Solver:
         Return value - Policy Q, that contains a mapping between (state, action) to expected value in case of taking that
         action from that particular state.
         """
-        board = self._environment.TicTacToe()
+        board = self._environment.TicTacToe(model_parameters=model_parameters)
         Q = {}
         for state in board.get_states().values():
             for action in board.get_possible_moves(state):
@@ -128,7 +144,7 @@ class Solver:
             board.reset()
             i = 0
             if _ % (iterations / 10) == 0:
-                games_won = self.play_games(num_of_games=1000, policy=Q)
+                games_won = self.test_play_games(num_of_games=runtime.GAMES_TEST, policy=Q)
                 games_won_over_time.append(games_won)
             while not board.get_state().is_over():
                 if i % 2 == 0:
@@ -155,8 +171,9 @@ class Solver:
             for games_won in games_won_over_time:
                 gw.write(f"{str(games_won)}\n")
         end_time = time.time()
-        print(f"Total Time: {timedelta(end_time - start_time)}")
-        self._plot_win_ratio(games_won_over_time)
+        print(f"Total Time: {timedelta(seconds=(end_time - start_time))}")
+        if runtime.PLOT:
+            self._plot_win_ratio(games_won_over_time)
         self._save_policy(Q, "Q_VALUES.txt")
         return Q
 

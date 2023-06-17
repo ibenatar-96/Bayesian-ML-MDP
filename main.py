@@ -1,31 +1,30 @@
-import agents
-import users
 import environment
 import runtime
 import solver
+import model_inference
 
 
 def init_env():
-    real_model_parameters = {1: 0.1, 2: 1.0, 3: 1.0, 4: 1.0, 5: 0.2, 6: 1.0, 7: 1.0, 8: 1.0, 9: 1.0}
-    real_model_parameters_2 = {1: 0.1, 2: 0.1, 3: 0.1, 4: 0.6, 5: 0.2, 6: 0.7, 7: 0.1, 8: 0.5, 9: 0.6}
-    real_model_parameters_3 = {1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1}
-
-    runtime.TicTacToe = environment.TicTacToe(real_model_parameters_2)
-    # runtime.Board_State = runtime.TicTacToe.get_state()
-    # runtime.aiAgent = agents.AiAgent()
-    # runtime.Opponent = users.Human()
+    pass
 
 
 def main():
     init_env()
-    model_parameters = {1: 0.1, 2: 1.0, 3: 1.0, 4: 1.0, 5: 0.5, 6: 1.0, 7: 1.0, 8: 1.0, 9: 1.0}
-    slvr = solver.Solver(model_parameters, environment)
+    prior_model_parameters = {1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0, 5: 0.8, 6: 1.0, 7: 1.0, 8: 1.0, 9: 1.0}
+    posterior_model_parameters = model_inference.ML(obs_file="observations.log",
+                                                    prior_model_parameters=prior_model_parameters)
+
+    # model_parameters = {1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0, 5: 0.9, 6: 1.0, 7: 1.0, 8: 1.0, 9: 1.0}
+    # real_model_parameters = {1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0, 5: 0.3, 6: 1.0, 7: 1.0, 8: 1.0, 9: 1.0}
+    # print(f"####### TRAIN & TEST WITH {model_parameters} #######")
+    slvr = solver.Solver(posterior_model_parameters, environment, "observations.log")
     slvr.run()
-    # while not runtime.Board_State.is_over():
-    #     runtime.TicTacToe.mark(runtime.Opponent.next_move(), 'X')
-    #     if runtime.Board_State.is_over():
-    #         break
-    #     runtime.TicTacToe.mark(runtime.aiAgent.next_move(), 'O')
+    posterior_model_parameters = model_inference.ML(obs_file="observations.log",
+                                                    prior_model_parameters=posterior_model_parameters)
+    #
+    # print(f"####### TRAIN & TEST WITH {real_model_parameters} #######")
+    # slvr = solver.Solver(real_model_parameters, environment)
+    # slvr.run()
 
 
 if __name__ == '__main__':
