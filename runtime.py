@@ -1,6 +1,6 @@
 from jax import random
 DEBUG = False
-SPARSE = True
+SPARSE = False
 Board_State = None
 aiAgent = None
 Opponent = None
@@ -9,7 +9,7 @@ ORIGINAL_STATES = None
 REAL_MODEL_PARAMETERS = {1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0, 5: 1.0, 6: 1.0, 7: 1.0, 8: 1.0, 9: 1.0}
 MAX = float('+inf')
 MIN = float('-inf')
-ITERATIONS = 50000
+ITERATIONS = 10000
 GAMES_TEST = 1000
 WIN_REWARD = 10
 LOSE_REWARD = -10

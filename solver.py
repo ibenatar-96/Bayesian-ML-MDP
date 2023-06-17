@@ -13,6 +13,7 @@ from tqdm import tqdm
 import os
 import json
 import matplotlib.pyplot as plt
+from datetime import timedelta
 
 
 class Solver:
@@ -52,11 +53,27 @@ class Solver:
             if board.get_state().get_winner() != 'O':
                 lost_games.append(game_log)
         print(f"Total Games won: {runtime.GAMES_TEST - len(lost_games)}/{runtime.GAMES_TEST}")
-        with open("LOST_GAMES.txt", "a") as lg:
+        with open("LOST_GAMES.txt", "w") as lg:
             for lost_game in lost_games:
                 print("------ NEW GAME ------", file=lg)
                 for move in lost_game:
                     move.print_state(lg)
+
+    def play_games(self, num_of_games, policy):
+        board = self._environment.TicTacToe()
+        won_games = 0
+        opponent = Human(board)
+        ai_agent = AiAgent(board, policy)
+        print(f"\n\tPlaying {num_of_games} Tic-Tac-Toe")
+        for _ in range(num_of_games):
+            board.reset()
+            while not board.get_state().is_over():
+                opponent.play()
+                ai_agent.play()
+            if board.get_state().get_winner() == 'O':
+                won_games += 1
+        print(f"\tTotal Games won: {won_games}/{runtime.GAMES_TEST}")
+        return won_games
 
     def solve(self, model_parameters):
         """
@@ -106,18 +123,13 @@ class Solver:
                     _reward + discount_factor * max_next_Q - Q[(str(_state.BOARD), _action)])
 
         start_time = time.time()
-        won_games = 0
-        draw_games = 0
-        lost_games = 0
         games_won_over_time = []
         for _ in tqdm(range(iterations), desc='Agent Q-Learning'):
             board.reset()
             i = 0
             if _ % (iterations / 10) == 0:
-                games_won_over_time.append(won_games)
-                won_games = 0
-                draw_games = 0
-                lost_games = 0
+                games_won = self.play_games(num_of_games=1000, policy=Q)
+                games_won_over_time.append(games_won)
             while not board.get_state().is_over():
                 if i % 2 == 0:
                     mark = 'X'
@@ -139,19 +151,12 @@ class Solver:
                 __update_Q_value(state, action, reward, next_state, board)
                 board.update_state(next_state)
                 i += 1
-                if board.get_state().is_over():
-                    if board.get_state().get_winner() == "O":
-                        won_games += 1
-                    elif board.get_state().get_winner() == "X":
-                        lost_games += 1
-                    else:
-                        draw_games += 1
         with open("GAMES_WON_RATIO.txt", "w") as gw:
             for games_won in games_won_over_time:
                 gw.write(f"{str(games_won)}\n")
         end_time = time.time()
-        print(f"Total Time: {end_time - start_time}")
-        # self._plot_win_ratio(games_won_over_time)
+        print(f"Total Time: {timedelta(end_time - start_time)}")
+        self._plot_win_ratio(games_won_over_time)
         self._save_policy(Q, "Q_VALUES.txt")
         return Q
 
@@ -180,8 +185,8 @@ class Solver:
 
     @staticmethod
     def _plot_win_ratio(games_won_over_time):
-        plt.plot(range(runtime.ITERATIONS), games_won_over_time, color='b')
+        plt.plot(range(0, runtime.ITERATIONS, int(runtime.ITERATIONS / 10)), games_won_over_time)
         plt.xlabel('Iterations')
         plt.ylabel('Games Won')
-        plt.title('Number of Games Won Over Time')
+        plt.title('Games Won Over Time')
         plt.show()
