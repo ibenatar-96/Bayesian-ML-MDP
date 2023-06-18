@@ -30,9 +30,10 @@ class Solver:
 
     def run(self):
         """
-        Running using the policy computed in solve() function.
+        Running (Playing Tic-Tac-Toe) using the policy computed in solve() function.
         AI Agent - Uses computed Q-Learning policy to choose which cell to mark next.
         Human (Opponent) - Move is drawn (uniformly) random from all possible actions (empty cells).
+        Plays runtime.GAMES_TEST games, each game is played until State is Terminal (Winner or Draw).
         """
         if os.path.exists("Q_VALUES.txt") and runtime.SPARSE:
             print("Q_VALUES exists, loading..")
@@ -93,10 +94,13 @@ class Solver:
 
     def solve(self, model_parameters):
         """
-        :param model_parameters: mapping between cell and probability of successfully marking in that cell,
+        param: model_parameters: mapping between cell and probability of successfully marking in that cell,
         i.e. {1: 1.0, 2: 1.0, 3: 0.7, 4: 1.0, 5: 0.5, ... , 9: 1.0} Q-Learning algorithm to compute policy.
         Return value - Policy Q, that contains a mapping between (state, action) to expected value in case of taking that
         action from that particular state.
+
+        Solve interacts with 'fabricated' environment, where it assumes the parameters are the model_parameters.
+        So basically the Q-Learning is done using the model_parameters transition probabilities.
         """
         board = self._environment.TicTacToe(model_parameters=model_parameters)
         Q = {}
@@ -144,8 +148,9 @@ class Solver:
             board.reset()
             i = 0
             if _ % (iterations / 10) == 0:
-                games_won = self.test_play_games(num_of_games=runtime.GAMES_TEST, policy=Q)
-                games_won_over_time.append(games_won)
+                # games_won = self.test_play_games(num_of_games=runtime.GAMES_TEST, policy=Q)
+                # games_won_over_time.append(games_won)
+                pass
             while not board.get_state().is_over():
                 if i % 2 == 0:
                     mark = 'X'

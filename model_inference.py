@@ -34,9 +34,13 @@ def ai_model(alpha, beta, obs=None, nobs=runtime.INIT_OBSERVATIONS_LEN):
         numpyro.sample("o", dist.Bernoulli(p), obs=obs)
 
 
-def prior(obs, alpha, beta):
-    prior_predictive = numpyro.infer.Predictive(ai_model, num_samples=10000)
-    prior_samples = prior_predictive(jax.random.PRNGKey(int(time.time() * 1E6)), alpha=alpha, beta=beta)
+def prior_predictive(obs, alpha, beta):
+    """
+    Evaluates Prior Predictive from the Prior Dist.
+    Expecting to see mass in the bar where observation and imaginations are aligned.
+    """
+    prior_predi = numpyro.infer.Predictive(ai_model, num_samples=10000)
+    prior_samples = prior_predi(jax.random.PRNGKey(int(time.time() * 1E6)), alpha=alpha, beta=beta)
     if runtime.PLOT:
         plt.figure(figsize=(10, 3))
         plt.xlim(-1, len(obs) + 1)
@@ -46,10 +50,13 @@ def prior(obs, alpha, beta):
         plt.title("prior predictive")
         plt.legend()
         plt.show()
-    return prior_predictive
+    return prior_predi
 
 
 def inference(obs, alpha, beta):
+    """
+    Runs Inference using MCMC.
+    """
     nuts_kernel = numpyro.infer.NUTS(ai_model)
     mcmc = numpyro.infer.MCMC(
         nuts_kernel,
@@ -71,8 +78,12 @@ def posterior(mcmc):
 
 
 def posterior_predictive(obs, mcmc, alpha, beta):
-    posterior_predictive = numpyro.infer.Predictive(ai_model, posterior_samples=mcmc.get_samples())
-    posterior_samples = posterior_predictive(jax.random.PRNGKey(int(time.time() * 1E6)), alpha=alpha, beta=beta)
+    """
+    Evaluates Posterior Predictive from the Posterior Dist.
+    In basic words, what we are most expecting to see. (Probability to see each observation given our posterior dist.)
+    """
+    posterior_predi = numpyro.infer.Predictive(ai_model, posterior_samples=mcmc.get_samples())
+    posterior_samples = posterior_predi(jax.random.PRNGKey(int(time.time() * 1E6)), alpha=alpha, beta=beta)
     if runtime.PLOT:
         plt.figure(figsize=(10, 3))
         plt.xlim(-1, len(obs) + 1)
@@ -82,7 +93,7 @@ def posterior_predictive(obs, mcmc, alpha, beta):
         plt.title("posterior predictive")
         plt.legend()
         plt.show()
-    return posterior_predictive
+    return posterior_predi
 
 
 # def p_value(obs, posterior_samples):
@@ -91,6 +102,9 @@ def posterior_predictive(obs, mcmc, alpha, beta):
 
 
 def summarize_posterior(mcmc):
+    """
+    Summarizes Posterior, displays attributes such as mean, standard deviation, quantiles.
+    """
     p = mcmc.get_samples()["p"]
     p_mean = p.mean()
     p_stddev = p.std()
@@ -115,7 +129,11 @@ def summarize_posterior(mcmc):
         plt.show()
     return p_mean, p_stddev
 
+
 def ML(obs_file, prior_model_parameters=None):
+    """
+    Using the Logs in observations.log, 
+    """
     obs = {}
     with open(obs_file, "r+") as obs_log:
         for line in obs_log.readlines():
@@ -129,7 +147,7 @@ def ML(obs_file, prior_model_parameters=None):
         alpha = model_beta_parameters[cell]['alpha']
         beta = model_beta_parameters[cell]['beta']
         print(f"alpha: {alpha}, beta: {beta}")
-        prior_predi = prior(obs[cell], alpha, beta)
+        prior_predi = prior_predictive(obs[cell], alpha, beta)
         mcmc = inference(obs[cell], alpha, beta)
         posterior(mcmc)
         posterior_predi = posterior_predictive(obs[cell], mcmc, alpha, beta)

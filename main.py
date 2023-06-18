@@ -23,7 +23,7 @@ def init_env():
 def main():
     init_env()
     model_parameters = {1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0, 5: 0.8, 6: 1.0, 7: 1.0, 8: 1.0, 9: 1.0}
-    for _ in range(8):
+    for _ in range(5):
         model_parameters = model_inference.ML(obs_file="observations.log",
                                               prior_model_parameters=model_parameters)
         slvr = solver.Solver(model_parameters, environment, "observations.log")
