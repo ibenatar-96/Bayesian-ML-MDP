@@ -132,7 +132,7 @@ def summarize_posterior(mcmc):
 
 def ML(obs_file, prior_model_parameters=None):
     """
-    Using the Logs in observations.log, 
+    Using the Logs in observations.log,
     """
     obs = {}
     with open(obs_file, "r+") as obs_log:
