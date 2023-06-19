@@ -21,7 +21,6 @@ class Solver:
     Solver, in charge of computing Online planner using Q-Learning
     run() is used for running and testing policy computed.
     """
-
     def __init__(self, model_parameters, environment, logger):
         self._mapping = {}
         self._model_parameters = model_parameters
@@ -59,10 +58,10 @@ class Solver:
                 if action is None and next_state is None and reward is None:
                     break
                 if next_state.BOARD != prev_state_board:
-                    mark_logger[action].append(1)
-                else:
-                    mark_logger[action].append(0)
-                game_log.append(board.get_state())
+                    mark_logger[action].append(1)  # TODO : Change logger to hold sequences of: state, action, next_state
+                else:                              # TODO : Limit it to 15 games! not 15 elements in each array..
+                    mark_logger[action].append(0)  # TODO : [[s,a,s1,a1,s2,a2,s3,..., until end of episode], [....]]
+                game_log.append(board.get_state()) # TODO : each element in the array is an episode - an episode in our case is a FULL game, from empty board to terminal state.
             if board.get_state().get_winner() != 'O':
                 lost_games.append(game_log)
         print(f"Total Games won: {runtime.GAMES_TEST - len(lost_games)}/{runtime.GAMES_TEST}")

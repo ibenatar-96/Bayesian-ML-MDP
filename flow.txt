@@ -1,0 +1,12 @@
+1. run 10 REAL games (10 episodes)
+2. look at the logger, if I have enough data (enough actions for a certain parameter) then I should run inference on that parameter
+3. Evaluation
+    a. Q-Learning
+    b. run TEST REAL Games (do not gather info to the log)
+4. go to 1...
+
+SAVE THE DATA IN AN EXTERNAL FILE!!
+
+[[s,a,s1,a1,s2,a2,s3,..., until end of episode], [....]]
+
+each element in the array is an episode - an episode in our case is a FULL game, from empty board to terminal state.
