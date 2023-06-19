@@ -1,6 +1,5 @@
 import os.path
 import runtime
-# import environment
 import copy
 from users import Human
 from agents import AiAgent
