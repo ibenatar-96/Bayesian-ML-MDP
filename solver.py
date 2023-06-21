@@ -53,11 +53,10 @@ class Solver:
                 prev_state_board = copy.deepcopy(board.get_state().BOARD)
                 action, next_state, reward = ai_agent.play()
                 episode_log.append(board.get_state())
-
-        self.update_observations(run_logger)
-        with open(self._logger, "w") as logger:
-            for cell, obs in mark_logger.items():
-                logger.write(f"{str(cell)}: {str(obs)}\n")
+                if board.get_state().is_over() and board.get_state().get_winner() == 'O':
+                    won_games += 1
+        print(f"Total Games Won: {won_games}/{runtime.GAMES_TEST}")
+        # self.update_observations(run_logger)
 
     def test_play_games(self, num_of_games, policy):
         board = self._environment.TicTacToe()
@@ -150,14 +149,10 @@ class Solver:
                     available_moves_ = board.get_possible_moves(state_)
                     action_ = __choose_action(state_, available_moves_, second_mark)
                     next_state_, reward = board.mark(action_, second_mark)
-                # if state.BOARD == [['X', 'O', 'X'], ['X', 'O', None], [None, None, None]]:
-                #     print(f"Next state: {next_state.BOARD}, reward: {reward}, mark: {mark}")
                 __update_Q_value(state, action, reward, next_state, board)
                 board.update_state(next_state)
                 i += 1
-        with open(os.path.join("logs", "GAMES_WON_RATIO.txt")) as gw:
-            for games_won in games_won_over_time:
-                gw.write(f"{str(games_won)}\n")
+        self.write_to_file(os.path.join("logs", "GAMES_WON_RATIO.txt"), games_won_over_time)
         end_time = time.time()
         print(f"Total Time: {timedelta(seconds=(end_time - start_time))}")
         if runtime.PLOT:
@@ -168,13 +163,17 @@ class Solver:
     def get_policy(self):
         return self._mapping
 
+    def update_observations(self, run_logger):
+        with open(self._logger, "r") as obs_log:
+            content = obs_log.read()
+            existing_list = eval(content)
+            existing_list.append(run_logger)
+        with open(self._logger, 'w') as log_file:
+            log_file.write(str(existing_list))
+
     @staticmethod
     def load_observations(log_file):
         logger = []
-        pass
-
-    @staticmethod
-    def update_observations(logger):
         pass
 
     @staticmethod
@@ -183,7 +182,7 @@ class Solver:
         with open(txt_file, "w") as qd:
             json.dump(jsonifable, qd)
 
-        with open(os.path.join("logs", "Q_DEBUG.txt")) as f:
+        with open(os.path.join("logs", "Q_DEBUG.txt"), "w") as f:
             list_of_strings = [f'{key[0]}, {key[1]}: {Q[key]}' for key in Q.keys() if Q[key] is not None]
             [f.write(f'{st}\n') for st in list_of_strings]
 
@@ -204,3 +203,8 @@ class Solver:
         plt.ylabel('Games Won')
         plt.title('Games Won Over Time')
         plt.show()
+
+    @staticmethod
+    def write_to_file(file, data):
+        with open(file, "w") as f:
+            f.write(str(data))
