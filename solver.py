@@ -3,6 +3,7 @@ import runtime
 import copy
 from users import Human
 from agents import AiAgent
+import actions
 import numpyro
 import numpyro.distributions as dist
 import jax
@@ -33,49 +34,33 @@ class Solver:
         Human (Opponent) - Move is drawn (uniformly) random from all possible actions (empty cells).
         Plays runtime.GAMES_TEST games, each game is played until State is Terminal (Winner or Draw).
         """
-        if os.path.exists("Q_VALUES.txt") and runtime.SPARSE:
-            print("Q_VALUES exists, loading..")
-            policy = self._load_policy("Q_VALUES.txt")
-        else:
-            policy = self.solve(self._model_parameters)
+        policy = self.solve(self._model_parameters)
         board = self._environment.TicTacToe()
-        mark_logger = {1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: []}
-        lost_games = []
         opponent = Human(board)
         ai_agent = AiAgent(board, policy)
         print("Agent Playing REAL PARAMETERS Tic-Tac-Toe")
+        won_games = 0
+        # run_logger = load_observations(os.path.join("logs", "observations.log"))
+        run_logger = []
         for _ in tqdm(range(runtime.GAMES_TEST), desc='Agent Playing Tic-Tac-Toe..'):
-            game_log = []
+            episode_log = []
             board.reset()
             while not board.get_state().is_over():
+                episode_log.append(board.get_state().BOARD)
                 action, next_state, reward = opponent.play()
-                if action is None and next_state is None and reward is None:
-                    break
-                game_log.append(board.get_state())
+                episode_log.append(action)
+                episode_log.append(next_state.BOARD)
                 prev_state_board = copy.deepcopy(board.get_state().BOARD)
                 action, next_state, reward = ai_agent.play()
-                if action is None and next_state is None and reward is None:
-                    break
-                if next_state.BOARD != prev_state_board:
-                    mark_logger[action].append(1)  # TODO : Change logger to hold sequences of: state, action, next_state
-                else:                              # TODO : Limit it to 15 games! not 15 elements in each array..
-                    mark_logger[action].append(0)  # TODO : [[s,a,s1,a1,s2,a2,s3,..., until end of episode], [....]]
-                game_log.append(board.get_state()) # TODO : each element in the array is an episode - an episode in our case is a FULL game, from empty board to terminal state.
-            if board.get_state().get_winner() != 'O':
-                lost_games.append(game_log)
-        print(f"Total Games won: {runtime.GAMES_TEST - len(lost_games)}/{runtime.GAMES_TEST}")
-        with open("LOST_GAMES.txt", "w") as lg:
-            for lost_game in lost_games:
-                print("------ NEW GAME ------", file=lg)
-                for move in lost_game:
-                    move.print_state(lg)
+                episode_log.append(board.get_state())
 
+        self.update_observations(run_logger)
         with open(self._logger, "w") as logger:
             for cell, obs in mark_logger.items():
                 logger.write(f"{str(cell)}: {str(obs)}\n")
 
     def test_play_games(self, num_of_games, policy):
-        board = self._environment.TicTacToe(model_parameters=self._model_parameters)
+        board = self._environment.TicTacToe()
         won_games = 0
         opponent = Human(board)
         ai_agent = AiAgent(board, policy)
@@ -170,18 +155,27 @@ class Solver:
                 __update_Q_value(state, action, reward, next_state, board)
                 board.update_state(next_state)
                 i += 1
-        with open("GAMES_WON_RATIO.txt", "w") as gw:
+        with open(os.path.join("logs", "GAMES_WON_RATIO.txt")) as gw:
             for games_won in games_won_over_time:
                 gw.write(f"{str(games_won)}\n")
         end_time = time.time()
         print(f"Total Time: {timedelta(seconds=(end_time - start_time))}")
         if runtime.PLOT:
             self._plot_win_ratio(games_won_over_time)
-        self._save_policy(Q, "Q_VALUES.txt")
+        self._save_policy(Q, os.path.join("logs", "Q_VALUES.txt"))
         return Q
 
     def get_policy(self):
         return self._mapping
+
+    @staticmethod
+    def load_observations(log_file):
+        logger = []
+        pass
+
+    @staticmethod
+    def update_observations(logger):
+        pass
 
     @staticmethod
     def _save_policy(Q, txt_file):
@@ -189,7 +183,7 @@ class Solver:
         with open(txt_file, "w") as qd:
             json.dump(jsonifable, qd)
 
-        with open("Q_DEBUG.txt", "w") as f:
+        with open(os.path.join("logs", "Q_DEBUG.txt")) as f:
             list_of_strings = [f'{key[0]}, {key[1]}: {Q[key]}' for key in Q.keys() if Q[key] is not None]
             [f.write(f'{st}\n') for st in list_of_strings]
 

@@ -12,9 +12,6 @@ import ast
 import os
 
 
-# numpyro.set_platform("cpu")
-
-
 class TicTacToe:
     """
     Tic Tac Toe board with probabilities to mark in each square

@@ -10,3 +10,8 @@ SAVE THE DATA IN AN EXTERNAL FILE!!
 [[s,a,s1,a1,s2,a2,s3,..., until end of episode], [....]]
 
 each element in the array is an episode - an episode in our case is a FULL game, from empty board to terminal state.
+
+# TODO : Change logger to hold sequences of: state, action, next_state
+# TODO : Limit it to 15 games! not 15 elements in each array..
+# TODO : [[s,a,s1,a1,s2,a2,s3,..., until end of episode], [....]]
+# TODO : each element in the array is an episode - an episode in our case is a FULL game, from empty board to terminal state.
