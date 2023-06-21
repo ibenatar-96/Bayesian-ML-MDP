@@ -187,7 +187,7 @@ def ML(obs_file, prior_model_parameters=None):
         if len(obs) < 10:
             print(f"Not enough observations for: {func_name, action_parameter}")
             continue
-        print(f"Function: {func_name}, Action Parameter: {action_parameter} Obs: {obs}")
+        print(f"Function: {func_name}, Action Parameter: {action_parameter}, Obs: {obs}")
         alpha = model_beta_parameters[(func_name, action_parameter)]['alpha']
         beta = model_beta_parameters[(func_name, action_parameter)]['beta']
         print(f"alpha: {alpha}, beta: {beta}")
