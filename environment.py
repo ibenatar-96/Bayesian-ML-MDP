@@ -63,6 +63,7 @@ class TicTacToe:
     @staticmethod
     def _is_terminal(board):
         """
+        :param: Board is a String representing the current board state.
         Checks whether board is terminal - (3 in a row / column / diagonal) or Full Board (no empty square) and Draw.
         Return value: 2 values - Terminal (Boolean) and Winner ('X' / 'O' / None)
         """
@@ -95,6 +96,7 @@ class TicTacToe:
 
     def get_possible_moves(self, state=None):
         """
+        :param: State can be a String representing the current board state, or the State Object.
         Returns a list of all possible moves - possible moves are all cells marked as None.
         """
         _state = state
@@ -107,12 +109,16 @@ class TicTacToe:
 
     def mark(self, next_move, mark, state=None):
         """
+        :param: State can be a String representing the current board state, or a State Object.
         Marks cell {next_move} with probability self._model_parameters[{next_move}].
         i.e. self._model_parameters = {1: 1.0, 2: 1.0, 3: 0.7, 4: 1.0, 5: 0.5, ... , 9: 1.0} and next_move = 3, mark = 'O',
         so with probability 0.7 cell 3 will be marked with 'O'.
         Return Value: returns Reward depending on ending state (State can change if sample value is < prob, else stays the same).
                       Also returns the Current State (New State if changed, last State if didn't change).
         """
+        model_params_map = {}
+        for (func_action, action_param) in self._model_parameters:
+            model_params_map[action_param] = self._model_parameters[(func_action, action_param)]
         reward = utils.IMMEDIATE_REWARD
         if state is None:
             state = copy.deepcopy(self.get_state().BOARD)
@@ -122,7 +128,10 @@ class TicTacToe:
         j = (next_move - 1) % 3
         assert i * 3 + j + 1 == next_move
         assert (state[i][j] is None)
-        y = numpyro.sample('y', dist.Bernoulli(probs=self._model_parameters[next_move]),
+        if next_move not in model_params_map:
+            print(f"{next_move} is not in model_params_map ({model_params_map}), unexpected behaviour")
+            assert False
+        y = numpyro.sample('y', dist.Bernoulli(probs=model_params_map[next_move]),
                            rng_key=jax.random.PRNGKey(int(time.time() * 1E6))).item()
         if y > 0 or mark == 'X':
             state[i][j] = mark
@@ -160,6 +169,7 @@ class State:
                                                                                                ['X','O','X']])
     TERMINAL STATE:  True = 3 in a row / diagonal / column, or No empty cell & No winner. False = Every other case.
     """
+
     def __init__(self, term=False, winner=None, board=None):
         self.TERM = term
         self.WINNER = winner

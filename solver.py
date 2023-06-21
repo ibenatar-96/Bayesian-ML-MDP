@@ -39,7 +39,7 @@ class Solver:
         policy = self.solve(self._model_parameters)
         board = self._environment.TicTacToe()  # This Board has REAL PARAMETERS!
         self.test_play_games(num_of_games=utils.GAMES_TEST, policy=policy)
-        _actions = actions.Actions(board)
+        actions_ = actions.Actions(board)
         won_games = 0
         run_logger = []
         for _ in tqdm(range(utils.GAMES_COLLECT), desc='Playing Real Tic-Tac-Toe & Collecting Logs..'):
@@ -48,32 +48,34 @@ class Solver:
             i = 0
             while not board.get_state().is_over():
                 prev_board = copy.deepcopy(board.get_state().BOARD)
-                action_ind = self.choose_action(board.get_state(), board.get_possible_moves(), policy, i)
-                print(f"action: {action_ind}")
-                (func_action, action_parameter), next_state, reward = _actions.activate_action(state=board.get_state(),
+                action_ind = self.choose_action(board.get_state(), actions_.get_possible_actions(prev_board), policy, i)
+                (func_action, action_parameter), next_state, reward = actions_.activate_action(state=board.get_state(),
                                                                                                action_ind=action_ind)
-                episode_log.append((prev_board, (func_action, action_parameter), next_state.BOARD))
+                episode_log.append((prev_board, (func_action.__name__, action_parameter), next_state.BOARD))
                 i = (i + 1) % 2
                 if board.get_state().is_over() and board.get_state().get_winner() == 'O':
                     won_games += 1
-        print(f"Total Games Won: {won_games}/{utils.GAMES_TEST}")
+            run_logger.append(episode_log)
+        print(f"Total Games Won: {won_games}/{utils.GAMES_COLLECT}")
         self.update_observations(run_logger)
 
     def test_play_games(self, num_of_games, policy):
         print("Agent Playing REAL PARAMETERS Tic-Tac-Toe")
         board = self._environment.TicTacToe()  # This Board has REAL PARAMETERS!
         won_games = 0
-        opponent = Human(board)
-        ai_agent = AiAgent(board, policy)
+        actions_ = actions.Actions(board)
         print(f"\n\tTesting {num_of_games} Tic-Tac-Toe Games")
         for _ in tqdm(range(num_of_games), desc='Agent Playing Tic-Tac-Toe..'):
             board.reset()
+            i = 0
             while not board.get_state().is_over():
-                opponent.play()
-                ai_agent.play()
-            if board.get_state().get_winner() == 'O':
-                won_games += 1
-        print(f"\tTotal Games Won: {won_games}/{utils.GAMES_TEST}")
+                prev_board = copy.deepcopy(board.get_state().BOARD)
+                action_ind = self.choose_action(board.get_state(), actions_.get_possible_actions(prev_board), policy, i)
+                actions_.activate_action(state=board.get_state(), action_ind=action_ind)
+                i = (i + 1) % 2
+                if board.get_state().is_over() and board.get_state().get_winner() == 'O':
+                    won_games += 1
+        print(f"\tTotal Games Won: {won_games}/{num_of_games}")
         # return won_games
 
     def solve(self, model_parameters):
@@ -87,30 +89,31 @@ class Solver:
         So basically the Q-Learning is done using the model_parameters transition probabilities.
         """
         board = self._environment.TicTacToe(model_parameters=model_parameters)  # This Board has 'Fictive' PARAMETERS!
+        actions_ = actions.Actions(board)
         Q = {}
         for state in board.get_states().values():
-            for action in board.get_possible_moves(state):
-                Q[(str(state.BOARD), action)] = 0.0
+            for (func_action, action_param) in actions_.get_possible_actions(state):
+                Q[(str(state.BOARD), (func_action, action_param))] = 0.0
         alpha = utils.ALPHA
         epsilon = utils.EPSILON
         discount_factor = utils.DISCOUNT_FACTOR
         iterations = utils.ITERATIONS
 
-        def __choose_action(_state, _available_moves, _mark):
+        def __choose_action(_state, _available_actions, _mark):
             if random.uniform(0, 1) < epsilon:
-                return random.choice(_available_moves)
+                return random.choice(_available_actions)
             else:
-                Q_values = [__get_Q_value(_state, _action) for _action in _available_moves]
+                Q_values = [__get_Q_value(_state, _action) for _action in _available_actions]
                 if _mark == "O":
                     max_Q = max(Q_values)
                 else:
                     max_Q = min(Q_values)
                 if Q_values.count(max_Q) > 1:
-                    best_moves = [i for i in range(len(_available_moves)) if Q_values[i] == max_Q]
+                    best_moves = [i for i in range(len(_available_actions)) if Q_values[i] == max_Q]
                     i = random.choice(best_moves)
                 else:
                     i = Q_values.index(max_Q)
-            return _available_moves[i]
+            return _available_actions[i]
 
         def __get_Q_value(_state, _action):
             if (str(_state.BOARD), _action) not in Q:
@@ -119,9 +122,9 @@ class Solver:
                 Q[(str(_state.BOARD), _action)] = 0.0
             return Q[(str(_state.BOARD), _action)]
 
-        def __update_Q_value(_state, _action, _reward, _next_state, _board):
+        def __update_Q_value(_state, _action, _reward, _next_state, _actions):
             next_Q_values = [__get_Q_value(_next_state, next_action) for next_action in
-                             _board.get_possible_moves(_next_state)]
+                             _actions.get_possible_actions(_next_state)]
             max_next_Q = max(next_Q_values) if next_Q_values else 0.0
             Q[(str(_state.BOARD), _action)] += alpha * (
                     _reward + discount_factor * max_next_Q - Q[(str(_state.BOARD), _action)])
@@ -136,15 +139,15 @@ class Solver:
                 mark = marks[i % 2]
                 second_mark = marks[i % 2]
                 state = copy.deepcopy(board.get_state())
-                available_moves = board.get_possible_moves(state)
-                action = __choose_action(state, available_moves, mark)
-                next_state, reward = board.mark(action, mark)
+                available_actions = actions_.get_possible_actions(state)
+                (func_action, action_param) = __choose_action(state, available_actions, mark)
+                next_state, reward = board.mark(action_param, mark)
                 if not next_state.is_over():
                     state_ = copy.deepcopy(next_state)
-                    available_moves_ = board.get_possible_moves(state_)
-                    action_ = __choose_action(state_, available_moves_, second_mark)
-                    next_state_, reward = board.mark(action_, second_mark)
-                __update_Q_value(state, action, reward, next_state, board)
+                    available_actions_ = actions_.get_possible_actions(state_)
+                    (func_action_, action_param_) = __choose_action(state_, available_actions_, second_mark)
+                    next_state_, reward = board.mark(action_param_, second_mark)
+                __update_Q_value(state, (func_action, action_param), reward, next_state, actions_)
                 board.update_state(next_state)
                 i += 1
         self.write_to_file(os.path.join("logs", "GAMES_WON_RATIO.txt"), games_won_over_time)
@@ -159,17 +162,14 @@ class Solver:
         return self._mapping
 
     def update_observations(self, run_logger):
-        with open(self._logger, "r") as obs_log:
-            content = obs_log.read()
-            existing_list = eval(content)
-            existing_list.append(run_logger)
-        with open(self._logger, 'w') as log_file:
-            log_file.write(str(existing_list))
+        with open(self._logger, 'a') as log_file:
+            for episode in run_logger:
+                log_file.write(f"{str(episode)}\n")
 
     @staticmethod
     def choose_action(state, available_moves, Q, i):
         if i == 0:
-            return 9
+            return 0
         Q_values = [Q[str(state.BOARD), action] for action in available_moves]
         max_Q = max(Q_values)
         if Q_values.count(max_Q) > 1:
@@ -177,7 +177,7 @@ class Solver:
             i = random.choice(best_moves)
         else:
             i = Q_values.index(max_Q)
-        return available_moves[i]
+        return available_moves[i][1]
 
     @staticmethod
     def load_observations(log_file):
