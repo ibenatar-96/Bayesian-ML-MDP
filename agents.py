@@ -2,13 +2,11 @@ import random
 
 
 class AiAgent:
-    def __init__(self, environment, policy, model_parameters=None):  # TODO: Add model parameters
+    def __init__(self, environment, policy):  # TODO: Add model parameters
         self._mark = 'O'
         self._turn = False
-        self.model_parameters = {1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0, 5: 0.5, 6: 1.0, 7: 1.0, 8: 1.0, 9: 1.0}
         self._environment = environment
         self._policy = policy
-        # self._policy = self._solver.solve()
 
     def play(self, action_parameter=None):
         if self._environment.get_state().is_over():

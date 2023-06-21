@@ -6,7 +6,7 @@ import numpy
 import scipy
 import time
 
-import runtime
+import utils
 
 model_beta_parameters = {1: {'alpha': 1, 'beta': 1}, 2: {'alpha': 1, 'beta': 1}, 3: {'alpha': 1, 'beta': 1},
                          4: {'alpha': 1, 'beta': 1}, 5: {'alpha': 1, 'beta': 1}, 6: {'alpha': 1, 'beta': 1},
@@ -21,7 +21,7 @@ model_beta_parameters = {1: {'alpha': 1, 'beta': 1}, 2: {'alpha': 1, 'beta': 1},
 # What we are expecting to see is an increase in the acc. rewards.
 # Order is -> 1. Run Model, 2. Gather logs / acc. reward, 3. Update Posterior (model_parameters) and repeat 1.,2.,3...
 
-def ai_model(alpha, beta, obs=None, nobs=runtime.INIT_OBSERVATIONS_LEN):
+def ai_model(alpha, beta, obs=None, nobs=utils.INIT_OBSERVATIONS_LEN):
     """
     (Tic-Tac-Toe) AI Agent model with NumPyro.
     """
@@ -41,7 +41,7 @@ def prior_predictive(obs, alpha, beta):
     """
     prior_predi = numpyro.infer.Predictive(ai_model, num_samples=10000)
     prior_samples = prior_predi(jax.random.PRNGKey(int(time.time() * 1E6)), alpha=alpha, beta=beta)
-    if runtime.PLOT:
+    if utils.PLOT:
         plt.figure(figsize=(10, 3))
         plt.xlim(-1, len(obs) + 1)
         plt.hist([sum(o) for o in prior_samples['o']], density=True, bins=len(obs) * 2 + 1,
@@ -69,7 +69,7 @@ def inference(obs, alpha, beta):
 
 
 def posterior(mcmc):
-    if runtime.PLOT:
+    if utils.PLOT:
         plt.figure(figsize=(10, 3))
         plt.title("posterior")
         plt.xlabel("p")
@@ -84,7 +84,7 @@ def posterior_predictive(obs, mcmc, alpha, beta):
     """
     posterior_predi = numpyro.infer.Predictive(ai_model, posterior_samples=mcmc.get_samples())
     posterior_samples = posterior_predi(jax.random.PRNGKey(int(time.time() * 1E6)), alpha=alpha, beta=beta)
-    if runtime.PLOT:
+    if utils.PLOT:
         plt.figure(figsize=(10, 3))
         plt.xlim(-1, len(obs) + 1)
         plt.hist([sum(o) for o in posterior_samples['o']], density=True, bins=len(obs) * 2 + 1,
@@ -115,7 +115,7 @@ def summarize_posterior(mcmc):
     print(f"stddev\t{p_stddev:.3f}")
     for i in range(len(quantiles)):
         print(f"{quantiles[i] * 100:3.0f}%\t{pq[i]:.3f}")
-    if runtime.PLOT:
+    if utils.PLOT:
         plt.figure(figsize=(10, 3))
         plt.xlabel("p")
         height, _, _ = plt.hist(p, histtype="step", lw=2, bins="auto", label="posterior")

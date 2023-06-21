@@ -1,5 +1,5 @@
 import os.path
-import runtime
+import utils
 import copy
 from users import Human
 from agents import AiAgent
@@ -14,6 +14,7 @@ import os
 import json
 import matplotlib.pyplot as plt
 from datetime import timedelta
+import actions
 
 
 class Solver:
@@ -21,6 +22,7 @@ class Solver:
     Solver, in charge of computing Online planner using Q-Learning
     run() is used for running and testing policy computed.
     """
+
     def __init__(self, model_parameters, environment, logger):
         self._mapping = {}
         self._model_parameters = model_parameters
@@ -35,44 +37,44 @@ class Solver:
         Plays runtime.GAMES_TEST games, each game is played until State is Terminal (Winner or Draw).
         """
         policy = self.solve(self._model_parameters)
-        board = self._environment.TicTacToe()
-        opponent = Human(board)
-        ai_agent = AiAgent(board, policy)
-        print("Agent Playing REAL PARAMETERS Tic-Tac-Toe")
+        board = self._environment.TicTacToe()  # This Board has REAL PARAMETERS!
+        self.test_play_games(num_of_games=utils.GAMES_TEST, policy=policy)
+        _actions = actions.Actions(board)
         won_games = 0
-        # run_logger = load_observations(os.path.join("logs", "observations.log"))
         run_logger = []
-        for _ in tqdm(range(runtime.GAMES_TEST), desc='Agent Playing Tic-Tac-Toe..'):
+        for _ in tqdm(range(utils.GAMES_COLLECT), desc='Playing Real Tic-Tac-Toe & Collecting Logs..'):
             episode_log = []
             board.reset()
+            i = 0
             while not board.get_state().is_over():
-                episode_log.append(board.get_state().BOARD)
-                action, next_state, reward = opponent.play()
-                episode_log.append(action)
-                episode_log.append(next_state.BOARD)
-                prev_state_board = copy.deepcopy(board.get_state().BOARD)
-                action, next_state, reward = ai_agent.play()
-                episode_log.append(board.get_state())
+                prev_board = copy.deepcopy(board.get_state().BOARD)
+                action_ind = self.choose_action(board.get_state(), board.get_possible_moves(), policy, i)
+                print(f"action: {action_ind}")
+                (func_action, action_parameter), next_state, reward = _actions.activate_action(state=board.get_state(),
+                                                                                               action_ind=action_ind)
+                episode_log.append((prev_board, (func_action, action_parameter), next_state.BOARD))
+                i = (i + 1) % 2
                 if board.get_state().is_over() and board.get_state().get_winner() == 'O':
                     won_games += 1
-        print(f"Total Games Won: {won_games}/{runtime.GAMES_TEST}")
-        # self.update_observations(run_logger)
+        print(f"Total Games Won: {won_games}/{utils.GAMES_TEST}")
+        self.update_observations(run_logger)
 
     def test_play_games(self, num_of_games, policy):
-        board = self._environment.TicTacToe()
+        print("Agent Playing REAL PARAMETERS Tic-Tac-Toe")
+        board = self._environment.TicTacToe()  # This Board has REAL PARAMETERS!
         won_games = 0
         opponent = Human(board)
         ai_agent = AiAgent(board, policy)
         print(f"\n\tTesting {num_of_games} Tic-Tac-Toe Games")
-        for _ in range(num_of_games):
+        for _ in tqdm(range(num_of_games), desc='Agent Playing Tic-Tac-Toe..'):
             board.reset()
             while not board.get_state().is_over():
                 opponent.play()
                 ai_agent.play()
             if board.get_state().get_winner() == 'O':
                 won_games += 1
-        print(f"\tTotal Games Won: {won_games}/{runtime.GAMES_TEST}")
-        return won_games
+        print(f"\tTotal Games Won: {won_games}/{utils.GAMES_TEST}")
+        # return won_games
 
     def solve(self, model_parameters):
         """
@@ -84,15 +86,15 @@ class Solver:
         Solve interacts with 'fabricated' environment, where it assumes the parameters are the model_parameters.
         So basically the Q-Learning is done using the model_parameters transition probabilities.
         """
-        board = self._environment.TicTacToe(model_parameters=model_parameters)
+        board = self._environment.TicTacToe(model_parameters=model_parameters)  # This Board has 'Fictive' PARAMETERS!
         Q = {}
         for state in board.get_states().values():
             for action in board.get_possible_moves(state):
                 Q[(str(state.BOARD), action)] = 0.0
-        alpha = runtime.ALPHA
-        epsilon = runtime.EPSILON
-        discount_factor = runtime.DISCOUNT_FACTOR
-        iterations = runtime.ITERATIONS
+        alpha = utils.ALPHA
+        epsilon = utils.EPSILON
+        discount_factor = utils.DISCOUNT_FACTOR
+        iterations = utils.ITERATIONS
 
         def __choose_action(_state, _available_moves, _mark):
             if random.uniform(0, 1) < epsilon:
@@ -126,20 +128,13 @@ class Solver:
 
         start_time = time.time()
         games_won_over_time = []
+        marks = ['X', 'O']
         for _ in tqdm(range(iterations), desc='Agent Q-Learning'):
             board.reset()
             i = 0
-            if _ % (iterations / 10) == 0:
-                # games_won = self.test_play_games(num_of_games=runtime.GAMES_TEST, policy=Q)
-                # games_won_over_time.append(games_won)
-                pass
             while not board.get_state().is_over():
-                if i % 2 == 0:
-                    mark = 'X'
-                    second_mark = 'O'
-                else:
-                    mark = 'O'
-                    second_mark = 'X'
+                mark = marks[i % 2]
+                second_mark = marks[i % 2]
                 state = copy.deepcopy(board.get_state())
                 available_moves = board.get_possible_moves(state)
                 action = __choose_action(state, available_moves, mark)
@@ -155,7 +150,7 @@ class Solver:
         self.write_to_file(os.path.join("logs", "GAMES_WON_RATIO.txt"), games_won_over_time)
         end_time = time.time()
         print(f"Total Time: {timedelta(seconds=(end_time - start_time))}")
-        if runtime.PLOT:
+        if utils.PLOT:
             self._plot_win_ratio(games_won_over_time)
         self._save_policy(Q, os.path.join("logs", "Q_VALUES.txt"))
         return Q
@@ -170,6 +165,19 @@ class Solver:
             existing_list.append(run_logger)
         with open(self._logger, 'w') as log_file:
             log_file.write(str(existing_list))
+
+    @staticmethod
+    def choose_action(state, available_moves, Q, i):
+        if i == 0:
+            return 9
+        Q_values = [Q[str(state.BOARD), action] for action in available_moves]
+        max_Q = max(Q_values)
+        if Q_values.count(max_Q) > 1:
+            best_moves = [i for i in range(len(available_moves)) if Q_values[i] == max_Q]
+            i = random.choice(best_moves)
+        else:
+            i = Q_values.index(max_Q)
+        return available_moves[i]
 
     @staticmethod
     def load_observations(log_file):
@@ -198,7 +206,7 @@ class Solver:
 
     @staticmethod
     def _plot_win_ratio(games_won_over_time):
-        plt.plot(range(0, runtime.ITERATIONS, int(runtime.ITERATIONS / 10)), games_won_over_time)
+        plt.plot(range(0, utils.ITERATIONS, int(utils.ITERATIONS / 10)), games_won_over_time)
         plt.xlabel('Iterations')
         plt.ylabel('Games Won')
         plt.title('Games Won Over Time')

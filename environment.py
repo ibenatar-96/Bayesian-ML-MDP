@@ -2,7 +2,7 @@ import copy
 import sys
 import time
 from functools import reduce
-import runtime
+import utils
 from itertools import product
 import numpyro
 import numpyro.distributions as dist
@@ -22,11 +22,10 @@ class TicTacToe:
     Terminal State = Winner (3 in a row / column / diagonal) or Full Board (no empty square) and Draw
     """
 
-    def __init__(self, model_parameters=runtime.REAL_MODEL_PARAMETERS):
+    def __init__(self, model_parameters=utils.REAL_MODEL_PARAMETERS):
         self._model_parameters = model_parameters
         self._states = self._init_states_space()
         self._state = self._states[str([[None] * 3 for _ in range(3)])]
-        runtime.ORIGINAL_STATES = copy.deepcopy(self._states)
 
     def __iter__(self):
         return iter(self._states)
@@ -57,7 +56,7 @@ class TicTacToe:
                     term, win = self._is_terminal(state)
                     states[str(state)] = State(term, win, state)
         end_time = time.time()
-        if runtime.DEBUG:
+        if utils.DEBUG:
             print(f"Time for Creating State Space: {end_time - start_time}")
         return states
 
@@ -106,9 +105,6 @@ class TicTacToe:
         moves = [(i * 3 + j + 1) for i in range(3) for j in range(3) if _state[i][j] is None]
         return moves
 
-    def get_real_model_parameters(self):
-        return self._model_parameters
-
     def mark(self, next_move, mark, state=None):
         """
         Marks cell {next_move} with probability self._model_parameters[{next_move}].
@@ -117,9 +113,11 @@ class TicTacToe:
         Return Value: returns Reward depending on ending state (State can change if sample value is < prob, else stays the same).
                       Also returns the Current State (New State if changed, last State if didn't change).
         """
-        reward = -1
+        reward = utils.IMMEDIATE_REWARD
         if state is None:
             state = copy.deepcopy(self.get_state().BOARD)
+        elif isinstance(state, State):
+            state = state.BOARD
         i = (next_move - 1) // 3
         j = (next_move - 1) % 3
         assert i * 3 + j + 1 == next_move
@@ -130,18 +128,17 @@ class TicTacToe:
             state[i][j] = mark
             new_state = self.get_states()[str(state)]
             if new_state.is_over() and new_state.get_winner() == 'X':
-                reward += runtime.LOSE_REWARD
+                reward += utils.LOSE_REWARD
             elif new_state.is_over() and new_state.get_winner() == 'O':
-                reward += runtime.WIN_REWARD
+                reward += utils.WIN_REWARD
             elif new_state.is_over():
-                reward += runtime.DRAW_REWARD
+                reward += utils.DRAW_REWARD
             self.update_state(new_state)
             # runtime.Board_State = new_state
         else:
-            reward = -2
-            if runtime.DEBUG:
+            if utils.DEBUG:
                 print(f"Failed to Mark '{mark}' in Square: {next_move}")
-        if runtime.DEBUG_BOARD:
+        if utils.DEBUG_BOARD:
             self.get_state().print_state()
         return self.get_state(), reward
 
@@ -149,7 +146,7 @@ class TicTacToe:
         init_str_state = str([[None] * 3 for _ in range(3)])
         init_state = self._states[init_str_state]
         self.update_state(init_state)
-        if runtime.DEBUG_BOARD:
+        if utils.DEBUG_BOARD:
             print("Reset:")
             self._state.print_state()
 
