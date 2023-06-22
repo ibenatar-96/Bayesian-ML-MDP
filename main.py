@@ -3,6 +3,7 @@ import utils
 import solver
 import os
 import actions
+import model_inference
 
 
 # real_model_parameters = {1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0, 5: 0.3, 6: 1.0, 7: 1.0, 8: 1.0, 9: 1.0}
