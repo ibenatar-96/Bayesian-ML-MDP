@@ -30,8 +30,13 @@ class Solver:
         Human (Opponent) - Move is drawn (uniformly) random from all possible actions (empty cells).
         Plays runtime.GAMES_TEST games, each game is played until State is Terminal (Winner or Draw).
         """
-        policy = self.solve(self._model_parameters)
-        self.test_play_games(num_of_games=utils.GAMES_TEST, policy=policy)
+        # Step 1 - Computes Optimal Policy given model parameters, and optimal adversary
+        policy = self.compute_policy(self._model_parameters)
+
+        # Step 2 - Evaluates computed policy on real environment and real (random) adversary
+        self.evaluate_policy(num_of_games=utils.GAMES_TEST, policy=policy)
+
+        # Step 3 - Executes computed policy on real adversary, and collects statistics
         board = self._environment.TicTacToe()  # This Board has REAL PARAMETERS!
         actions_ = actions.Actions(board)
         won_games = 0
@@ -54,8 +59,9 @@ class Solver:
         print(f"\tTotal Games Won: {won_games}/{utils.GAMES_COLLECT}")
         self.update_observations(run_logger)
 
-    def test_play_games(self, num_of_games, policy, txt_file=None):
+    def evaluate_policy(self, num_of_games, policy, txt_file=None):
         """
+        Evaluates Accuracy of policy on real parameters env.
         Plays {num_of_games} Tic-Tac-Toe games, with REAL MODEL parameters, meaning that it tests the accuracy of our AI
         Model, given the Policy.
         Tests how our trained AI Model (using our belief model parameters) performs in the REAL PARAMETER env.
@@ -77,21 +83,22 @@ class Solver:
             while not board.get_state().is_over():
                 prev_board = copy.deepcopy(board.get_state().BOARD)
                 action_ind = self.choose_action(board.get_state(), actions_.get_possible_actions(prev_board), policy, i)
-                (func_action, action_parameter), next_state, reward = actions_.activate_action(state=board.get_state(), action_ind=action_ind)
-                game_log.append((action_parameter,board.get_state()))
+                (func_action, action_parameter), next_state, reward = actions_.activate_action(state=board.get_state(),
+                                                                                               action_ind=action_ind)
+                game_log.append((action_parameter, board.get_state()))
                 i = (i + 1) % 2
                 if board.get_state().is_over() and board.get_state().get_winner() == 'O':
                     won_games += 1
                 elif board.get_state().is_over() and board.get_state().get_winner() != 'O':
                     with open(txt_file, "a") as f:
-                        for (action,state) in game_log:
-                            print(f"Action: {action}",file=f)
+                        for (action, state) in game_log:
+                            print(f"Action: {action}", file=f)
                             state.print_state(file=f)
-                        print("------------- NEW GAME ------------\n",file=f)
+                        print("------------- NEW GAME ------------\n", file=f)
         print(f"\tTotal Games Won: {won_games}/{num_of_games}")
-        # return won_games
+        return won_games
 
-    def solve(self, model_parameters):
+    def compute_policy(self, model_parameters):
         """
         param: model_parameters: mapping between cell and probability of successfully marking in that cell,
         i.e. {1: 1.0, 2: 1.0, 3: 0.7, 4: 1.0, 5: 0.5, ... , 9: 1.0} Q-Learning algorithm to compute policy.
@@ -150,7 +157,7 @@ class Solver:
             i = 0
             while not board.get_state().is_over():
                 mark = marks[i % 2]
-                second_mark = marks[(i+1) % 2]
+                second_mark = marks[(i + 1) % 2]
                 state = copy.deepcopy(board.get_state())
                 available_actions = actions_.get_possible_actions(state)
                 (func_action, action_param) = __choose_action(state, available_actions, mark)
