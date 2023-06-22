@@ -55,6 +55,14 @@ class Solver:
         self.update_observations(run_logger)
 
     def test_play_games(self, num_of_games, policy, txt_file=None):
+        """
+        Plays {num_of_games} Tic-Tac-Toe games, with REAL MODEL parameters, meaning that it tests the accuracy of our AI
+        Model, given the Policy.
+        Tests how our trained AI Model (using our belief model parameters) performs in the REAL PARAMETER env.
+        For example, our AI Model can be trained on an env. where the probability to mark at cell 5 is 0.8, and a policy
+        Q can be computed with this probability, then we test this policy Q on a real env, where the real probability
+        for marking cell 5 is 0.3.
+        """
         print("Agent Playing REAL PARAMETERS Tic-Tac-Toe")
         board = self._environment.TicTacToe()  # This Board has REAL PARAMETERS!
         won_games = 0
@@ -168,6 +176,14 @@ class Solver:
         return self._mapping
 
     def update_observations(self, run_logger):
+        """
+        Updates the observation log file, Each line the the observation log file is an episode.
+        An episode is a full Tic-Tac-Toc game.
+        It is composed of a list of tuples - each tuple is (state, action, next_state).
+        and each tuple in the list is an action / play by the AI or Opponent.
+        For the opponent plays the tuple will be - (state, 'opponent_mark', next_state).
+        For the AI Model plays the tuple will be - (state, {action parameter (1,2,3..,9)}, next_state)
+        """
         with open(self._logger, 'a') as log_file:
             for episode in run_logger:
                 log_file.write(f"{str(episode)}\n")
