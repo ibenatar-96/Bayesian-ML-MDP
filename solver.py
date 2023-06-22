@@ -36,12 +36,16 @@ class Solver:
         Human (Opponent) - Move is drawn (uniformly) random from all possible actions (empty cells).
         Plays runtime.GAMES_TEST games, each game is played until State is Terminal (Winner or Draw).
         """
-        policy = self.solve(self._model_parameters)
+        if os.path.isfile(os.path.join("logs", "Q_VALUES.txt")) and utils.SPARSE:
+            policy = self._load_policy(os.path.join("logs", "Q_VALUES.txt"))
+        else:
+            policy = self.solve(self._model_parameters)
+        self.test_play_games(num_of_games=utils.GAMES_TEST, policy=policy, txt_file=os.path.join("logs", "LOST_GAMES.txt"))
         board = self._environment.TicTacToe()  # This Board has REAL PARAMETERS!
-        self.test_play_games(num_of_games=utils.GAMES_TEST, policy=policy)
         actions_ = actions.Actions(board)
         won_games = 0
         run_logger = []
+        print(f"\n\tPlaying Real & Collecting Logs {utils.GAMES_COLLECT} Tic-Tac-Toe Games")
         for _ in tqdm(range(utils.GAMES_COLLECT), desc='Playing Real Tic-Tac-Toe & Collecting Logs..'):
             episode_log = []
             board.reset()
@@ -56,25 +60,35 @@ class Solver:
                 if board.get_state().is_over() and board.get_state().get_winner() == 'O':
                     won_games += 1
             run_logger.append(episode_log)
-        print(f"Total Games Won: {won_games}/{utils.GAMES_COLLECT}")
+        print(f"\tTotal Games Won: {won_games}/{utils.GAMES_COLLECT}")
         self.update_observations(run_logger)
 
-    def test_play_games(self, num_of_games, policy):
+    def test_play_games(self, num_of_games, policy, txt_file=None):
         print("Agent Playing REAL PARAMETERS Tic-Tac-Toe")
         board = self._environment.TicTacToe()  # This Board has REAL PARAMETERS!
         won_games = 0
+        if txt_file is not None:
+            open(txt_file, 'w').close()
         actions_ = actions.Actions(board)
         print(f"\n\tTesting {num_of_games} Tic-Tac-Toe Games")
         for _ in tqdm(range(num_of_games), desc='Agent Playing Tic-Tac-Toe..'):
+            game_log = []
             board.reset()
             i = 0
             while not board.get_state().is_over():
                 prev_board = copy.deepcopy(board.get_state().BOARD)
                 action_ind = self.choose_action(board.get_state(), actions_.get_possible_actions(prev_board), policy, i)
-                actions_.activate_action(state=board.get_state(), action_ind=action_ind)
+                (func_action, action_parameter), next_state, reward = actions_.activate_action(state=board.get_state(), action_ind=action_ind)
+                game_log.append((action_parameter,board.get_state()))
                 i = (i + 1) % 2
                 if board.get_state().is_over() and board.get_state().get_winner() == 'O':
                     won_games += 1
+                elif board.get_state().is_over() and board.get_state().get_winner() != 'O':
+                    with open(txt_file, "a") as f:
+                        for (action,state) in game_log:
+                            print(f"Action: {action}",file=f)
+                            state.print_state(file=f)
+                        print("------------- NEW GAME ------------\n",file=f)
         print(f"\tTotal Games Won: {won_games}/{num_of_games}")
         # return won_games
 
@@ -122,7 +136,8 @@ class Solver:
                 Q[(str(_state.BOARD), _action)] = 0.0
             return Q[(str(_state.BOARD), _action)]
 
-        def __update_Q_value(_state, _action, _reward, _next_state, _actions):
+        def __update_Q_value(_state, _func_action, _action_param, _reward, _next_state, _actions):
+            _action = (_func_action, _action_param)
             next_Q_values = [__get_Q_value(_next_state, next_action) for next_action in
                              _actions.get_possible_actions(_next_state)]
             max_next_Q = max(next_Q_values) if next_Q_values else 0.0
@@ -147,7 +162,7 @@ class Solver:
                     available_actions_ = actions_.get_possible_actions(state_)
                     (func_action_, action_param_) = __choose_action(state_, available_actions_, second_mark)
                     next_state_, reward = board.mark(action_param_, second_mark)
-                __update_Q_value(state, (func_action, action_param), reward, next_state, actions_)
+                __update_Q_value(state, func_action, action_param, reward, next_state, actions_)
                 board.update_state(next_state)
                 i += 1
         self.write_to_file(os.path.join("logs", "GAMES_WON_RATIO.txt"), games_won_over_time)
@@ -201,7 +216,7 @@ class Solver:
         d = {}
         for key, val in policy.items():
             start, end = key.split(':')
-            d[str(start), int(end)] = val
+            d[str(start), str(end)] = val
         return d
 
     @staticmethod

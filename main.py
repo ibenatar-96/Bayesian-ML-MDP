@@ -34,10 +34,10 @@ def init_env():
 def main():
     init_env()
     model_parameters = utils.INIT_MODEL_PARAMETERS
-    for _ in range(5):
-        slvr = solver.Solver(model_parameters, environment, utils.LOG_FILE)
-        slvr.run()
-        model_parameters = model_inference.ML(utils.LOG_FILE, model_parameters)
+    # for _ in range(5):
+    slvr = solver.Solver(model_parameters, environment, utils.LOG_FILE)
+    slvr.run()
+        # model_parameters = model_inference.ML(utils.LOG_FILE, model_parameters)
 
 
 if __name__ == '__main__':
