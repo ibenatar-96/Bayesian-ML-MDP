@@ -1,15 +1,11 @@
 import copy
 import sys
 import time
-from functools import reduce
 import utils
 from itertools import product
 import numpyro
 import numpyro.distributions as dist
 import jax
-from itertools import combinations
-import ast
-import os
 
 
 class TicTacToe:

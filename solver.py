@@ -1,12 +1,6 @@
 import os.path
 import utils
 import copy
-from users import Human
-from agents import AiAgent
-import actions
-import numpyro
-import numpyro.distributions as dist
-import jax
 import time
 import random
 from tqdm import tqdm
@@ -36,11 +30,8 @@ class Solver:
         Human (Opponent) - Move is drawn (uniformly) random from all possible actions (empty cells).
         Plays runtime.GAMES_TEST games, each game is played until State is Terminal (Winner or Draw).
         """
-        if os.path.isfile(os.path.join("logs", "Q_VALUES.txt")) and utils.SPARSE:
-            policy = self._load_policy(os.path.join("logs", "Q_VALUES.txt"))
-        else:
-            policy = self.solve(self._model_parameters)
-        self.test_play_games(num_of_games=utils.GAMES_TEST, policy=policy, txt_file=os.path.join("logs", "LOST_GAMES.txt"))
+        policy = self.solve(self._model_parameters)
+        self.test_play_games(num_of_games=utils.GAMES_TEST, policy=policy)
         board = self._environment.TicTacToe()  # This Board has REAL PARAMETERS!
         actions_ = actions.Actions(board)
         won_games = 0
@@ -164,12 +155,13 @@ class Solver:
                 __update_Q_value(state, (func_action, action_param), reward, next_state, actions_)
                 board.update_state(next_state)
                 i += 1
-        self.write_to_file(os.path.join("logs", "GAMES_WON_RATIO.txt"), games_won_over_time)
+        self.write_to_file(utils.GAMES_WIN_RATIO_FILE, games_won_over_time)
         end_time = time.time()
         print(f"Total Time: {timedelta(seconds=(end_time - start_time))}")
         if utils.PLOT:
             self._plot_win_ratio(games_won_over_time)
-        self._save_policy(Q, os.path.join("logs", "Q_VALUES.txt"))
+        if utils.DEBUG:
+            self._save_policy(Q, os.path.join("logs", "Q_VALUES.txt"))
         return Q
 
     def get_policy(self):
@@ -228,5 +220,5 @@ class Solver:
 
     @staticmethod
     def write_to_file(file, data):
-        with open(file, "w") as f:
+        with open(file, "a") as f:
             f.write(str(data))

@@ -1,7 +1,6 @@
 import environment
 import utils
 import solver
-import model_inference
 import os
 import actions
 
@@ -22,9 +21,13 @@ def init_env():
     ('ai_mark', 5): 0.8
     ...}
     """
-    if not os.path.isfile(utils.LOG_FILE) or utils.CLEAN_OBS:
+    if not os.path.isfile(utils.LOG_FILE) or utils.CLEAN_FILES:
         print(f"Creating / Cleaning Observations Log File: {utils.LOG_FILE}")
         open(utils.LOG_FILE, 'w').close()
+
+    if not os.path.isfile(utils.GAMES_WIN_RATIO_FILE) or utils.CLEAN_FILES:
+        print(f"Creating / Cleaning Games Win Ratio File: {utils.GAMES_WIN_RATIO_FILE}")
+        open(utils.GAMES_WIN_RATIO_FILE, 'w').close()
 
     for (func_action, action_param) in actions.Actions().get_actions():
         if func_action not in utils.IGNORE_ACTIONS and (func_action, action_param) not in utils.INIT_MODEL_PARAMETERS:
