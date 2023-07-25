@@ -12,7 +12,7 @@ aiAgent = None
 Opponent = None
 ORIGINAL_STATES = None
 REAL_MODEL_PARAMETERS = {('ai_mark', 1): 1.0, ('ai_mark', 2): 1.0, ('ai_mark', 3): 1.0, ('ai_mark', 4): 1.0,
-                         ('ai_mark', 5): 1.0, ('ai_mark', 6): 1.0, ('ai_mark', 7): 1.0, ('ai_mark', 8): 1.0,
+                         ('ai_mark', 5): 0.3, ('ai_mark', 6): 1.0, ('ai_mark', 7): 1.0, ('ai_mark', 8): 1.0,
                          ('ai_mark', 9): 1.0}
 MAX = float('+inf')
 MIN = float('-inf')
@@ -31,4 +31,4 @@ INIT_OBSERVATIONS_LEN = 10
 LOG_FILE = os.path.join("logs", "observations.log")
 GAMES_WIN_RATIO_FILE = os.path.join("logs", "games_win_ratio.log")
 IGNORE_ACTIONS = ['opponent_mark']
-INIT_MODEL_PARAMETERS = {('ai_mark', 5): 1.0}
+INIT_MODEL_PARAMETERS = {('ai_mark', 5): 0.8}
