@@ -89,7 +89,7 @@ class Solver:
                 i = (i + 1) % 2
                 if board.get_state().is_over() and board.get_state().get_winner() == 'O':
                     won_games += 1
-                elif board.get_state().is_over() and board.get_state().get_winner() != 'O':
+                elif board.get_state().is_over() and board.get_state().get_winner() != 'O' and txt_file is not None:
                     with open(txt_file, "a") as f:
                         for (action, state) in game_log:
                             print(f"Action: {action}", file=f)

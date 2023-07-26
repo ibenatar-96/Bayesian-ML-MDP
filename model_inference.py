@@ -64,6 +64,7 @@ def fill_post_model_params(posterior, prior):
         if action not in posterior:
             posterior[action] = prior[action]
 
+
 def ai_model(alpha, beta, obs=None, nobs=utils.INIT_OBSERVATIONS_LEN):
     """
     (Tic-Tac-Toe) AI Agent model with NumPyro.
@@ -200,8 +201,10 @@ def ML(obs_file, prior_model_parameters=None):
         sample = numpy.random.choice(mcmc.get_samples()["p"])
         print(f"sample: {sample}\n")
         posterior_model_parameters[(func_name, action_parameter)] = sample
-        model_beta_parameters[(func_name, action_parameter)]['alpha'] = p_mean * (((p_mean * (1 - p_mean)) / p_stddev) - 1)
-        model_beta_parameters[(func_name, action_parameter)]['beta'] = (1 - p_mean) * (((p_mean * (1 - p_mean)) / p_stddev) - 1)
+        model_beta_parameters[(func_name, action_parameter)]['alpha'] = p_mean * (
+                    ((p_mean * (1 - p_mean)) / p_stddev) - 1)
+        model_beta_parameters[(func_name, action_parameter)]['beta'] = (1 - p_mean) * (
+                    ((p_mean * (1 - p_mean)) / p_stddev) - 1)
     fill_post_model_params(posterior_model_parameters, prior_model_parameters)
     print(f"posterior model parameters: {posterior_model_parameters}")
     return posterior_model_parameters
