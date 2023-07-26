@@ -1,10 +1,11 @@
-import os
 """
 This file defines global variables.
 """
+import os
+
 DEBUG = False
 DEBUG_BOARD = False
-PLOT = False
+PLOT = True
 SPARSE = False
 CLEAN_FILES = True
 INIT_OBSERVATIONS = True
