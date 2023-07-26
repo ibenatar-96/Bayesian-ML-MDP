@@ -8,6 +8,15 @@ import time
 
 import utils
 
+gpu_available = jax.cuda.device_count() > 0
+
+if gpu_available:
+    # Use GPU for inference
+    numpyro.set_platform("gpu")
+else:
+    # Use CPU for inference
+    numpyro.set_platform("cpu")
+
 model_beta_parameters = {}
 
 
