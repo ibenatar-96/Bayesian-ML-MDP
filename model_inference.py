@@ -87,15 +87,15 @@ def prior_predictive(obs, alpha, beta):
     """
     prior_predi = numpyro.infer.Predictive(ai_model, num_samples=10000)
     prior_samples = prior_predi(jax.random.PRNGKey(int(time.time() * 1E6)), alpha=alpha, beta=beta)
-    if utils.PLOT:
-        plt.figure(figsize=(10, 3))
-        plt.xlim(-1, len(obs) + 1)
-        plt.hist([sum(o) for o in prior_samples['o']], density=True, bins=len(obs) * 2 + 1,
-                 label="imaginations")
-        plt.axvline(sum(obs), color="red", lw=2, label="observation")
-        plt.title("prior predictive")
-        plt.legend()
-        plt.show()
+    # if utils.PLOT:
+    #     plt.figure(figsize=(10, 3))
+    #     plt.xlim(-1, len(obs) + 1)
+    #     plt.hist([sum(o) for o in prior_samples['o']], density=True, bins=len(obs) * 2 + 1,
+    #              label="imaginations")
+    #     plt.axvline(sum(obs), color="red", lw=2, label="observation")
+    #     plt.title("prior predictive")
+    #     plt.legend()
+    #     plt.show()
     return prior_predi
 
 
@@ -130,15 +130,15 @@ def posterior_predictive(obs, mcmc, alpha, beta):
     """
     posterior_predi = numpyro.infer.Predictive(ai_model, posterior_samples=mcmc.get_samples())
     posterior_samples = posterior_predi(jax.random.PRNGKey(int(time.time() * 1E6)), alpha=alpha, beta=beta)
-    if utils.PLOT:
-        plt.figure(figsize=(10, 3))
-        plt.xlim(-1, len(obs) + 1)
-        plt.hist([sum(o) for o in posterior_samples['o']], density=True, bins=len(obs) * 2 + 1,
-                 label="imaginations")
-        plt.axvline(sum(obs), color="red", lw=2, label="observation")
-        plt.title("posterior predictive")
-        plt.legend()
-        plt.show()
+    # if utils.PLOT:
+    #     plt.figure(figsize=(10, 3))
+    #     plt.xlim(-1, len(obs) + 1)
+    #     plt.hist([sum(o) for o in posterior_samples['o']], density=True, bins=len(obs) * 2 + 1,
+    #              label="imaginations")
+    #     plt.axvline(sum(obs), color="red", lw=2, label="observation")
+    #     plt.title("posterior predictive")
+    #     plt.legend()
+    #     plt.show()
     return posterior_predi
 
 
