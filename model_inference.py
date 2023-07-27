@@ -8,7 +8,7 @@ import time
 
 import utils
 
-numpyro.set_platform("gpu")
+# numpyro.set_platform("gpu")
 
 model_beta_parameters = {}
 
