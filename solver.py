@@ -150,7 +150,7 @@ class Solver:
                     _reward + discount_factor * max_next_Q - Q[(str(_state.BOARD), _action)])
 
         start_time = time.time()
-        games_won_over_time = []
+        # games_won_over_time = []
         marks = ['X', 'O']
         for _ in tqdm(range(iterations), desc='Agent Q-Learning'):
             board.reset()
@@ -170,11 +170,11 @@ class Solver:
                 __update_Q_value(state, (func_action, action_param), reward, next_state, actions_)
                 board.update_state(next_state)
                 i += 1
-        self.write_to_file(utils.GAMES_WIN_RATIO_FILE, games_won_over_time)
+        # self.write_to_file(utils.GAMES_WIN_RATIO_FILE, games_won_over_time)
         end_time = time.time()
         print(f"Total Time: {timedelta(seconds=(end_time - start_time))}")
-        if utils.PLOT:
-            self._plot_win_ratio(games_won_over_time)
+        # if utils.PLOT:
+        #     self._plot_win_ratio(games_won_over_time)
         if utils.DEBUG:
             self._save_policy(Q, os.path.join("logs", "Q_VALUES.txt"))
         return Q
