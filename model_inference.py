@@ -41,6 +41,8 @@ def parse_obs(obs_file):
     for example - model_beta_parameters = {
     ('ai_mark', 5): {'alpha': 1, 'beta': 1},
     ('ai_mark', 1): {'alpha': 1, 'beta': 1} ... }
+
+    [([-1, 0, 0, 0, 1, 0, 0, 0, 1], 2, [-1, -1, 0, 0, 1, 0, 0, 0, 1]), ...] <- Input to the model
     """
     obs_map = {}
     obs_list = []
@@ -71,13 +73,13 @@ def ai_model(alpha, beta, obs=None, nobs=utils.INIT_OBSERVATIONS_LEN):
     """
     (Tic-Tac-Toe) AI Agent model with NumPyro.
     """
-    if obs is not None:  # for prior predictive
-        nobs = len(obs)
-    # p ~ Beta(1, 1)
-    p = numpyro.sample("p", dist.Beta(alpha, beta))
-    with numpyro.plate("obs", len(obs) if obs is not None else nobs):
-        # o ~ Bernoulli(p)
-        numpyro.sample("o", dist.Bernoulli(p), obs=obs)
+    # p ~ Beta(alpha, beta)
+    p = [numpyro.sample(f"p{i}", dist.Beta(alpha, beta)) for i in range(1, 10)]  # TODO: check if it is possible to del this line.
+    for i in range(len(obs)):
+        s, a, snext = obs[i]
+        p_i = p[a]
+        success = s != snext
+        numpyro.sample(f"success{i}", dist.Bernoulli(p_i), obs=success)
 
 
 def prior_predictive(obs, alpha, beta):
