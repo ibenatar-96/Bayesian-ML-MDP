@@ -17,7 +17,7 @@ REAL_MODEL_PARAMETERS = {('ai_mark', 1): 1.0, ('ai_mark', 2): 1.0, ('ai_mark', 3
                          ('ai_mark', 9): 1.0}
 MAX = float('+inf')
 MIN = float('-inf')
-ITERATIONS = 25000
+ITERATIONS = 20000
 GAMES_TEST = int(ITERATIONS / 4)
 GAMES_COLLECT = 15
 WIN_REWARD = 10
