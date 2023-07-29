@@ -97,9 +97,12 @@ def ai_model(obs=None):
         beta = model_beta_parameters[(func, action_param)]['beta']
         p[(func, action_param)] = numpyro.sample(f"p({str(func)}, {str(action_param)})", dist.Beta(alpha, beta))
     if obs is not None:
-        for (func, action_param) in obs.keys():
+        for entry in obs:
+            (func, action_param) = entry[0]
+            obs = entry[1]
             p_i = p[(func, action_param)]
-            numpyro.sample(f"success({str(func)}, {str(action_param)})", dist.Bernoulli(p_i), obs=obs[(func, action_param)])
+            numpyro.sample(f"success({str(func)}, {str(action_param)})", dist.Bernoulli(p_i),
+                           obs=obs[(func, action_param)])
 
 
 def prior_predictive(obs):
@@ -109,15 +112,28 @@ def prior_predictive(obs):
     """
     prior_predi = numpyro.infer.Predictive(ai_model, num_samples=10000)
     prior_samples = prior_predi(jax.random.PRNGKey(int(time.time() * 1E6)))
-    # if utils.PLOT:
-    #     plt.figure(figsize=(10, 3))
-    #     plt.xlim(-1, len(obs) + 1)
-    #     plt.hist([sum(o) for o in prior_samples['o']], density=True, bins=len(obs) * 2 + 1,
-    #              label="imaginations")
-    #     plt.axvline(sum(obs), color="red", lw=2, label="observation")
-    #     plt.title("prior predictive")
-    #     plt.legend()
-    #     plt.show()
+    if utils.PLOT:
+        fig, axs = plt.subplots(3, 3, figsize=(12, 12))
+        plt.subplots_adjust(hspace=0.5)
+        for i in range(3):
+            for j in range(3):
+                (func, action_param) = list(obs)[i % 3 + j % 3]
+                key = f"p({str(func)}, {str(action_param)})"
+                axs[i, j].set_title(f"Cell: {i % 3 + j % 3}")
+                axs[i, j].set_xlim(-1, len(obs) + 1)
+                prior_samples = prior_samples[key]
+                print(prior_samples.shape)
+                axs[i, j].hist([sum(o) for o in prior_samples], density=True, bins=len(obs) * 2 + 1,
+                               label="imaginations")
+
+        # plt.figure(figsize=(10, 3))
+        # plt[i, j].xlim(-1, len(obs) + 1)
+        # plt.hist([sum(o) for o in prior_samples['o']], density=True, bins=len(obs) * 2 + 1,
+        #          label="imaginations")
+        # plt.axvline(sum(obs), color="red", lw=2, label="observation")
+        # plt.title("prior predictive")
+        # plt.legend()
+        plt.show()
     return prior_predi
 
 
@@ -205,11 +221,13 @@ def ML(obs_file, prior_model_parameters=None):
     obs_map = parse_obs(obs_file)
     posterior_model_parameters = {}
     global model_beta_parameters
-    for (func_name, action_parameter), obs in obs_map.items():
+    for entry in obs_map:
+        (func_name, action_parameter) = entry[0]
+        obs = entry[1]
         if func_name in utils.IGNORE_ACTIONS:
             print(f"Ignoring function: {func_name}")
             continue
-        prior_predi = prior_predictive(obs)
+        prior_predi = prior_predictive(entry)
         mcmc = inference(obs)
         posterior(mcmc)
         posterior_predi = posterior_predictive(obs, mcmc)
@@ -219,9 +237,9 @@ def ML(obs_file, prior_model_parameters=None):
         print(f"sample: {sample}\n")
         posterior_model_parameters[(func_name, action_parameter)] = sample
         model_beta_parameters[(func_name, action_parameter)]['alpha'] = p_mean * (
-                    ((p_mean * (1 - p_mean)) / p_stddev) - 1)
+                ((p_mean * (1 - p_mean)) / p_stddev) - 1)
         model_beta_parameters[(func_name, action_parameter)]['beta'] = (1 - p_mean) * (
-                    ((p_mean * (1 - p_mean)) / p_stddev) - 1)
+                ((p_mean * (1 - p_mean)) / p_stddev) - 1)
     fill_post_model_params(posterior_model_parameters, prior_model_parameters)
     print(f"posterior model parameters: {posterior_model_parameters}")
     return posterior_model_parameters
