@@ -17,7 +17,7 @@ REAL_MODEL_PARAMETERS = {('ai_mark', 1): 1.0, ('ai_mark', 2): 1.0, ('ai_mark', 3
                          ('ai_mark', 9): 1.0}
 MAX = float('+inf')
 MIN = float('-inf')
-ITERATIONS = 20000
+ITERATIONS = 50
 GAMES_TEST = int(ITERATIONS / 4)
 GAMES_COLLECT = 15
 WIN_REWARD = 10
@@ -28,7 +28,6 @@ ALPHA = 0.5
 EPSILON = 0.2
 THETA = 1e-5
 IMMEDIATE_REWARD = -1
-INIT_OBSERVATIONS_LEN = 10
 LOG_FILE = os.path.join("logs", "observations.log")
 GAMES_WIN_RATIO_FILE = os.path.join("logs", "games_win_ratio.log")
 IGNORE_ACTIONS = ['opponent_mark']

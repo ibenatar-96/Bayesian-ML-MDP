@@ -60,6 +60,11 @@ def parse_obs(obs_file):
                 else obs_map.setdefault((func_name, action_param), []).append(0)
             if not (func_name, action_param) in model_beta_parameters:
                 model_beta_parameters[(func_name, action_param)] = {'alpha': 1, 'beta': 1}
+
+    # TODO This is for debug..
+    result = obs_map.items()
+    obs_map = list(result)
+    # TODO Del..
     return obs_map
 
 
@@ -69,26 +74,41 @@ def fill_post_model_params(posterior, prior):
             posterior[action] = prior[action]
 
 
-def ai_model(alpha, beta, obs=None, nobs=utils.INIT_OBSERVATIONS_LEN):
+def ai_model(obs=None):
     """
     (Tic-Tac-Toe) AI Agent model with NumPyro.
+    p is a dictionary mapping (function, action parameter) -> sample from Beta distribution using (alpha, beta).
+    obs = {
+    ('ai_mark', 5): [1, 1, 0, 0, 0, 0, 0, 1],
+    ('ai_mark', 1): [1, 1, 1, 1],
+    ('ai_mark', 8): [1, 1, 1, 1, 1, 1],
+    ('ai_mark', 4): [1, 1, 1, 1, 1],
+    ('ai_mark', 7): [1, 1, 1, 1, 1, 1, 1],
+    ('ai_mark', 3): [1, 1, 1, 1, 1],
+    ('ai_mark', 6): [1, 1, 1, 1, 1, 1, 1],
+    ('ai_mark', 2): [1, 1, 1, 1, 1, 1, 1, 1],
+    ('ai_mark', 9): [1, 1, 1]}
     """
     # p ~ Beta(alpha, beta)
-    p = [numpyro.sample(f"p{i}", dist.Beta(alpha, beta)) for i in range(1, 10)]  # TODO: check if it is possible to del this line.
-    for i in range(len(obs)):
-        s, a, snext = obs[i]
-        p_i = p[a]
-        success = s != snext
-        numpyro.sample(f"success{i}", dist.Bernoulli(p_i), obs=success)
+    global model_beta_parameters
+    p = {}
+    for (func, action_param) in model_beta_parameters.keys():
+        alpha = model_beta_parameters[(func, action_param)]['alpha']
+        beta = model_beta_parameters[(func, action_param)]['beta']
+        p[(func, action_param)] = numpyro.sample(f"p({str(func)}, {str(action_param)})", dist.Beta(alpha, beta))
+    if obs is not None:
+        for (func, action_param) in obs.keys():
+            p_i = p[(func, action_param)]
+            numpyro.sample(f"success({str(func)}, {str(action_param)})", dist.Bernoulli(p_i), obs=obs[(func, action_param)])
 
 
-def prior_predictive(obs, alpha, beta):
+def prior_predictive(obs):
     """
     Evaluates Prior Predictive from the Prior Dist.
     Expecting to see mass in the bar where observation and imaginations are aligned.
     """
     prior_predi = numpyro.infer.Predictive(ai_model, num_samples=10000)
-    prior_samples = prior_predi(jax.random.PRNGKey(int(time.time() * 1E6)), alpha=alpha, beta=beta)
+    prior_samples = prior_predi(jax.random.PRNGKey(int(time.time() * 1E6)))
     # if utils.PLOT:
     #     plt.figure(figsize=(10, 3))
     #     plt.xlim(-1, len(obs) + 1)
@@ -101,7 +121,7 @@ def prior_predictive(obs, alpha, beta):
     return prior_predi
 
 
-def inference(obs, alpha, beta):
+def inference(obs):
     """
     Runs Inference using MCMC.
     """
@@ -111,7 +131,7 @@ def inference(obs, alpha, beta):
         num_warmup=500,
         num_chains=4,
         num_samples=5000)
-    mcmc.run(jax.random.PRNGKey(int(time.time() * 1E6)), alpha=alpha, beta=beta, obs=jax.numpy.array(obs))
+    mcmc.run(jax.random.PRNGKey(int(time.time() * 1E6)), obs=jax.numpy.array(obs))
     mcmc.print_summary()
     return mcmc
 
@@ -125,13 +145,13 @@ def posterior(mcmc):
         plt.show()
 
 
-def posterior_predictive(obs, mcmc, alpha, beta):
+def posterior_predictive(obs, mcmc):
     """
     Evaluates Posterior Predictive from the Posterior Dist.
     In basic words, what we are most expecting to see. (Probability to see each observation given our posterior dist.)
     """
     posterior_predi = numpyro.infer.Predictive(ai_model, posterior_samples=mcmc.get_samples())
-    posterior_samples = posterior_predi(jax.random.PRNGKey(int(time.time() * 1E6)), alpha=alpha, beta=beta)
+    posterior_samples = posterior_predi(jax.random.PRNGKey(int(time.time() * 1E6)))
     # if utils.PLOT:
     #     plt.figure(figsize=(10, 3))
     #     plt.xlim(-1, len(obs) + 1)
@@ -189,17 +209,10 @@ def ML(obs_file, prior_model_parameters=None):
         if func_name in utils.IGNORE_ACTIONS:
             print(f"Ignoring function: {func_name}")
             continue
-        if len(obs) < 10:
-            print(f"Not enough observations for: {func_name, action_parameter}")
-            continue
-        print(f"Function: {func_name}, Action Parameter: {action_parameter}, Obs: {obs}")
-        alpha = model_beta_parameters[(func_name, action_parameter)]['alpha']
-        beta = model_beta_parameters[(func_name, action_parameter)]['beta']
-        print(f"alpha: {alpha}, beta: {beta}")
-        prior_predi = prior_predictive(obs, alpha, beta)
-        mcmc = inference(obs, alpha, beta)
+        prior_predi = prior_predictive(obs)
+        mcmc = inference(obs)
         posterior(mcmc)
-        posterior_predi = posterior_predictive(obs, mcmc, alpha, beta)
+        posterior_predi = posterior_predictive(obs, mcmc)
         # p_value(obs, posterior_samples)
         p_mean, p_stddev = summarize_posterior(mcmc)
         sample = numpy.random.choice(mcmc.get_samples()["p"])
