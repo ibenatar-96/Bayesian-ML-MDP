@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpyro
 import numpyro.distributions as dist
 import jax
-import numpy
+import numpy as np
 import itertools
 import time
 
@@ -23,78 +23,74 @@ func_numeric_mapping = {}
 # What we are expecting to see is an increase in the acc. rewards.
 # Order is -> 1. Run Model, 2. Gather logs / acc. reward, 3. Update Posterior (model_parameters) and repeat 1.,2.,3...
 
-
 def parse_obs(obs_file):
     """
-    Parses the Observation File, returns a Dictionary where: Key: (Function Number, Action Parameter), Value: List of
-    observations (list composed of 1's and 0's - 1 indicate that State != Next State, and 0 else).
-    Notice that it ignores actions that are in utils.IGNORE_ACTIONS. In our case - 'opponent_mark' is ignored.
-    For example: obs_map = {
-    (0, 5): [1, 1, 0, 0, 0, 0, 0, 1],
-    (0, 1): [1, 1, 1, 1],
-    (0, 8): [1, 1, 1, 1, 1, 1],
-    (0, 4): [1, 1, 1, 1, 1],
-    (0, 7): [1, 1, 1, 1, 1, 1, 1],
-    (0, 3): [1, 1, 1, 1, 1],
-    (0, 6): [1, 1, 1, 1, 1, 1, 1],
-    (0, 2): [1, 1, 1, 1, 1, 1, 1, 1],
-    (0, 9): [1, 1, 1]}
+    Parses the Observation File, returns a List of tuples,
+    where each tuple is composed of (State, (Function, Action Parameter), Next State)
+    for example:
+    State: [-1, 1, 0, -1, 0, -1, 1, 0, 0] where -1 indicates 'X' on the Board, 1 indicates 'O', and 0 indicates None (empty cell)
+    (Function, Action Parameter): (0, 5) -> 0 is the number assigned for the function 'ai_mark', mapping is located in func_numeric_mapping
+    Next State: [-1, 1, 0, -1, 1, -1, 1, 0, 0].
 
-    Where 0 is mapped to 'ai_mark' function in global func_numeric_mapping variable. This mapping exists because NumPyro
+    0 is mapped to 'ai_mark' function in global func_numeric_mapping variable. This mapping exists because NumPyro
     MCMC expects numeric values when running inference.
 
-    This Function also adds initial 'alpha' and 'beta' parameters to the global model_beta_parameters for every new
+    This Function also adds initial 'alpha' and 'beta' parameters to the global model_beta_parameters for every NEW
     func_action and action_param it encounters.
     for example - model_beta_parameters = {
     (0, 5): {'alpha': 1, 'beta': 1},
     (0, 1): {'alpha': 1, 'beta': 1} ... }
     """
-    func_numeric_count = 0
-    obs_map = {}
-    obs_list = []
-    with open(obs_file, "r") as file:
-        for line in file:
-            line = line.strip()  # Remove leading/trailing whitespaces and newlines
-            line_list = eval(line)  # Convert the line string to a list
-            obs_list.append(line_list)
-    global model_beta_parameters, func_numeric_mapping
-    for episode in obs_list:
-        for (state, (func_name, action_param), next_state) in episode:
-            if func_name in utils.IGNORE_ACTIONS:
-                continue
-            if func_name in func_numeric_mapping.keys():
-                func_numeric = func_numeric_mapping[func_name]
-            else:
-                func_numeric = func_numeric_count
-                func_numeric_mapping[func_name] = func_numeric_count
-                func_numeric_count += 1
-            obs_map.setdefault((func_numeric, action_param), []).append(1) if state != next_state \
-                else obs_map.setdefault((func_numeric, action_param), []).append(0)
-            if not (func_numeric, action_param) in model_beta_parameters:
-                model_beta_parameters[(func_numeric, action_param)] = {'alpha': 1, 'beta': 1}
 
-    sorted_dict = dict(sorted(obs_map.items(), key=lambda item: item[0]))
-    return sorted_dict
+    #Converts states from: [['X', 'O', None], ['X', None, 'X'], ['O', None, None]] to [-1, 1, 0, -1, 0, -1, 1, 0, 0]
+    #Meaning, creating a minimal state representation, where 'X' is marked a -1, 'O' as 1, and None as 0.
+    def minimal_state(state):
+        minimal_repr = []
+        for i in range(len(state)):
+            for j in range(len(state[i])):
+                if state[i][j] == 'X':
+                    minimal_repr.append(-1)
+                elif state[i][j] == 'O':
+                    minimal_repr.append(1)
+                else:
+                    minimal_repr.append(0)
+        return minimal_repr
+
+    obs_list = []
+    func_numeric_count = 0
+    global model_beta_parameters, func_numeric_mapping
+    with open(obs_file, "r") as obs_log:
+        for episode in obs_log:
+            episode = episode.strip()  # Remove leading/trailing whitespaces and newlines
+            episode_list = eval(episode)  # Convert the line string to a list
+            for (state, (func_name, action_param), next_state) in episode_list:
+                if func_name in utils.IGNORE_ACTIONS:
+                    continue
+                if func_name in func_numeric_mapping.keys():
+                    func_numeric = func_numeric_mapping[func_name]
+                else:
+                    func_numeric = func_numeric_count
+                    func_numeric_mapping[func_name] = func_numeric_count
+                    func_numeric_count += 1
+                obs_list.append((minimal_state(state), (func_numeric, action_param), minimal_state(next_state)))
+                if not (func_numeric, action_param) in model_beta_parameters:
+                    model_beta_parameters[(func_numeric, action_param)] = {'alpha': 1, 'beta': 1}
+    model_beta_parameters = dict(sorted(model_beta_parameters.items()))
+    return obs_list
 
 
 def fill_post_model_params(posterior, prior):
     posterior = {action: prior[action] for action in prior.keys() if action not in posterior}
 
 
-def ai_model(obs=None, nobs=None):
+def ai_model(obs=None):
     """
     (Tic-Tac-Toe) AI Agent model with NumPyro.
     p is a dictionary mapping (function, action parameter) -> sample from Beta distribution using (alpha, beta).
-    obs = {
-    (0, 5): [1, 1, 0, 0, 0, 0, 0, 1],
-    (0, 1): [1, 1, 1, 1],
-    (0, 8): [1, 1, 1, 1, 1, 1],
-    (0, 4): [1, 1, 1, 1, 1],
-    (0, 7): [1, 1, 1, 1, 1, 1, 1],
-    (0, 3): [1, 1, 1, 1, 1],
-    (0, 6): [1, 1, 1, 1, 1, 1, 1],
-    (0, 2): [1, 1, 1, 1, 1, 1, 1, 1],
-    (0, 9): [1, 1, 1]}
+    obs = [
+    ([-1,1,0,...], (0,3), [-1,1,1,...]),
+    ([-1,1,...,0], (0,9), [-1,1,...,1]),
+    ]
     """
     # p ~ Beta(alpha, beta)
     global model_beta_parameters
@@ -103,44 +99,50 @@ def ai_model(obs=None, nobs=None):
         alpha = model_beta_parameters[key]['alpha']
         beta = model_beta_parameters[key]['beta']
         p[key] = numpyro.sample(f"p{str(key)}", dist.Beta(alpha, beta))
-    for key, p_i in p.items():
-        if obs is not None:
-            action_obs = obs[key]
-            action_obs = jax.numpy.array(action_obs)
-            nobs_i = len(action_obs)
-        else:
-            action_obs = None
-            nobs = nobs
-            nobs_i = nobs[key]
-        with numpyro.plate(f"obs{str(key)}", size=nobs_i):
-            numpyro.sample(f"o{str(key)}", dist.Bernoulli(p_i), obs=action_obs)
+    # with numpyro.plate(f"obs", size=len(model_beta_parameters.keys())):
+    #     for key in model_beta_parameters.keys():
+    #         success = [1 if entry[0] != entry[2] else 0 for entry in obs if entry[1] == key] if obs is not None else None
+    #         if success is not None:
+    #             print(f"key: {key}, success: {success}")
+    #             success = jax.numpy.array(success)
+    #         numpyro.sample(f"o{key}", dist.Bernoulli(p[key]), obs=success)
+    # p ~ Beta(alpha, beta)
+    # if obs is not None:
+        for i in range(len(obs)):
+            s, a, snext = obs[i]
+            p_i = p[a]
+            success = jax.numpy.array([1 if s != snext else 0])
+            numpyro.sample(f"success{i}", dist.Bernoulli(p_i), obs=success)
 
 
-def prior_predictive(obs):
+def prior_predictive():
     """
     Evaluates Prior Predictive from the Prior Dist.
     Expecting to see mass in the bar where observation and imaginations are aligned.
     """
     prior_predi = numpyro.infer.Predictive(ai_model, num_samples=10000)
-    prior_samples = prior_predi(jax.random.PRNGKey(int(time.time() * 1E6)),
-                                nobs={key: len(value) for (key, value) in obs.items()})
+    prior_samples = prior_predi(jax.random.PRNGKey(int(time.time() * 1E6)))
     if utils.PLOT:
-        num_rows, num_cols = largest_divisors(len(obs.keys()))
-        assert num_rows * num_cols == len(obs.keys())
+        global model_beta_parameters
+        num_mapping = len(model_beta_parameters.keys())
+        num_rows, num_cols = largest_divisors(num_mapping)
+        assert num_rows * num_cols == num_mapping
         fig, axs = plt.subplots(num_rows, num_cols, figsize=(12, 12))
         plt.subplots_adjust(hspace=0.5)
         plt.title("prior predictive")
-        obs_list = list(obs.items())
         for i in range(num_rows):
             for j in range(num_cols):
-                key, action_obs = obs_list[i*num_cols + j]
+                key = list(model_beta_parameters.keys())[i*3 + j]
                 o_key = f"o{str(key)}"
+                x_titles = ["Success", "Fail"]
                 axs[i, j].set_title(o_key)
-                axs[i, j].set_xlim(-1, len(action_obs) + 1)
-                axs[i, j].hist([sum(o) for o in prior_samples[o_key]], density=True, bins=len(action_obs) * 2 + 1,
-                               label="imaginations")
-                axs[i, j].axvline(sum(action_obs), color="red", lw=2, label="observation")
-                axs[i, j].legend()
+                axs[i, j].set_xlim(0, 1)
+                success_counts = np.sum(prior_samples[o_key] == 1, axis=0)
+                fail_counts = np.sum(prior_samples[o_key] == 0, axis=0)
+                normalized_vector = [np.mean(success_counts), np.mean(fail_counts)]
+                sum_normalized = np.sum(normalized_vector)
+                normalized_vector /= sum_normalized
+                axs[i, j].bar(x_titles, normalized_vector)
         plt.show()
     return prior_predi
 
@@ -176,19 +178,31 @@ def largest_divisors(x):
 
 def posterior(mcmc, obs):
     if utils.PLOT:
-        num_rows, num_cols = largest_divisors(len(obs.keys()))
-        assert num_rows * num_cols == len(obs.keys())
+        global model_beta_parameters
+        num_mapping = len(model_beta_parameters.keys())
+        num_rows, num_cols = largest_divisors(num_mapping)
+        assert num_rows * num_cols == num_mapping
         fig, axs = plt.subplots(num_rows, num_cols, figsize=(12, 12))
         plt.subplots_adjust(hspace=0.5)
         plt.title("posterior")
-        obs_list = list(obs.items())
         for i in range(num_rows):
             for j in range(num_cols):
-                key, action_obs = obs_list[i*num_cols + j]
+                key = list(model_beta_parameters.keys())[i*3 + j]
                 p_key = f"p{str(key)}"
+                x_titles = ["Success", "Fail"]
                 axs[i, j].set_title(p_key)
-                axs[i, j].set_xlabel("p")
-                axs[i, j].hist(mcmc.get_samples()[p_key], density=True, bins='auto')
+                axs[i, j].set_xlim(0, 1)
+                success_counts = np.sum(mcmc.get_samples()[p_key] == 1, axis=0)
+                fail_counts = np.sum(mcmc.get_samples()[p_key] == 0, axis=0)
+                normalized_vector = [np.mean(success_counts), np.mean(fail_counts)]
+                sum_normalized = np.sum(normalized_vector)
+                normalized_vector /= sum_normalized
+                axs[i, j].bar(x_titles, normalized_vector)
+
+                # p_key = f"p{str(key)}"
+                # axs[i, j].set_title(p_key)
+                # axs[i, j].set_xlabel("p")
+                # axs[i, j].hist(mcmc.get_samples()[p_key], density=True, bins='auto')
         plt.show()
 
 
@@ -198,8 +212,7 @@ def posterior_predictive(obs, mcmc):
     In basic words, what we are most expecting to see. (Probability to see each observation given our posterior dist.)
     """
     posterior_predi = numpyro.infer.Predictive(ai_model, posterior_samples=mcmc.get_samples())
-    posterior_samples = posterior_predi(jax.random.PRNGKey(int(time.time() * 1E6)),
-                                        nobs={key: len(value) for (key, value) in obs.items()})
+    posterior_samples = posterior_predi(jax.random.PRNGKey(int(time.time() * 1E6)))
     if utils.PLOT:
         num_rows, num_cols = largest_divisors(len(obs.keys()))
         assert num_rows * num_cols == len(obs.keys())
@@ -219,11 +232,6 @@ def posterior_predictive(obs, mcmc):
                 axs[i, j].legend()
         plt.show()
     return posterior_predi
-
-
-# def p_value(obs, posterior_samples):
-#     p_value = sum(posterior_samples['o'].sum(axis=1) >= sum(obs)) / len(posterior_samples['o'])
-#     print(f"p_value = {p_value:.3f}")
 
 
 def summarize_posterior(mcmc, obs):
@@ -246,7 +254,7 @@ def summarize_posterior(mcmc, obs):
                 p_stddev = p.std()
                 distribution_stats[key] = {'mean': p_mean, 'stddev': p_stddev}
                 quantiles = [0, 0.025, 0.25, 0.5, 0.75, 0.975, 1]
-                pq = numpy.quantile(p, quantiles)
+                pq = np.quantile(p, quantiles)
                 print(f"stat\t{p_key}\n-------------")
                 print(f"mean\t{p_mean:.3f}")
                 print(f"stddev\t{p_stddev:.3f}")
@@ -268,18 +276,18 @@ def ML(obs_file, prior_model_parameters=None):
     """
     Using the Logs in observations.log,
     """
-    obs_map = parse_obs(obs_file)
+    obs_list = parse_obs(obs_file)
     posterior_model_parameters = {}
     global model_beta_parameters
-    prior_predi = prior_predictive(obs_map)
-    mcmc = inference(obs_map)
-    posterior(mcmc, obs_map)
-    posterior_predi = posterior_predictive(obs_map, mcmc)
+    prior_predi = prior_predictive()
+    mcmc = inference(obs_list)
+    posterior(mcmc, obs_list)
+    posterior_predi = posterior_predictive(obs_list, mcmc)
     # p_value(obs, posterior_samples)
-    dist_stats = summarize_posterior(mcmc, obs_map)
-    for key, _ in obs_map.items():
+    dist_stats = summarize_posterior(mcmc, obs_list)
+    for key in obs_list:
         p_key = f"p{str(key)}"
-        sample = numpy.random.choice(mcmc.get_samples()[p_key])
+        sample = np.random.choice(mcmc.get_samples()[p_key])
         print(f"sample: {sample}")
         p_mean = dist_stats[key]['mean']
         p_stddev = dist_stats[key]['stddev']
