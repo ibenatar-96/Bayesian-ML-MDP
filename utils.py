@@ -32,3 +32,17 @@ LOG_FILE = os.path.join("logs", "observations.log")
 GAMES_WIN_RATIO_FILE = os.path.join("logs", "games_win_ratio.log")
 IGNORE_ACTIONS = ['opponent_mark']
 INIT_MODEL_PARAMETERS = {('ai_mark', 5): 0.8}
+
+
+def largest_divisors(x):
+    # Initialize variables to store the two largest divisors
+    largest_divisor1 = 1
+    largest_divisor2 = x
+
+    # Find the two largest divisors of x
+    for i in range(2, int(x ** 0.5) + 1):
+        if x % i == 0:
+            largest_divisor1 = i
+            largest_divisor2 = x // i
+
+    return largest_divisor2, largest_divisor1

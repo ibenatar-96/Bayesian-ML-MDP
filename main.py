@@ -41,7 +41,7 @@ def main():
     for _ in range(5):
         slvr = solver.Solver(model_parameters, environment, utils.LOG_FILE)
         slvr.run()
-        model_parameters = model_inference.ML(utils.LOG_FILE, model_parameters)
+        model_parameters = model_inference.bayesian_learning(utils.LOG_FILE, model_parameters)
 
 
 if __name__ == '__main__':

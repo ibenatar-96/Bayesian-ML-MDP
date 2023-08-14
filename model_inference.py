@@ -5,7 +5,6 @@ import jax
 import numpy as np
 import itertools
 import time
-
 import utils
 
 # numpyro.set_platform("gpu")
@@ -272,7 +271,7 @@ def summarize_posterior(mcmc, obs):
     return distribution_stats
 
 
-def ML(obs_file, prior_model_parameters=None):
+def bayesian_learning(obs_file, prior_model_parameters=None):
     """
     Using the Logs in observations.log,
     """
