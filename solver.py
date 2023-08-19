@@ -96,7 +96,7 @@ class Solver:
                             state.print_state(file=f)
                         print("------------- NEW GAME ------------\n", file=f)
         print(f"\tTotal Games Won: {games_won}/{num_of_games}")
-        utils.GAMES_WIN_OVER_TIME.append(games_won)
+        utils.GAMES_WON_OVER_TIME.append(games_won)
         return games_won
 
     def compute_policy(self, model_parameters):
