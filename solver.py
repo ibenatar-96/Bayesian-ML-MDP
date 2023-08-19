@@ -39,7 +39,7 @@ class Solver:
         # Step 3 - Executes computed policy on real adversary, and collects statistics
         board = self._environment.TicTacToe()  # This Board has REAL PARAMETERS!
         actions_ = actions.Actions(board)
-        won_games = 0
+        games_won = 0
         run_logger = []
         print(f"\n\tPlaying Real & Collecting Logs {utils.GAMES_COLLECT} Tic-Tac-Toe Games")
         for _ in tqdm(range(utils.GAMES_COLLECT), desc='Playing Real Tic-Tac-Toe & Collecting Logs..'):
@@ -54,9 +54,9 @@ class Solver:
                 episode_log.append((prev_board, (func_action.__name__, action_parameter), next_state.BOARD))
                 i = (i + 1) % 2
                 if board.get_state().is_over() and board.get_state().get_winner() == 'O':
-                    won_games += 1
+                    games_won += 1
             run_logger.append(episode_log)
-        print(f"\tTotal Games Won: {won_games}/{utils.GAMES_COLLECT}")
+        print(f"\tTotal Games Won: {games_won}/{utils.GAMES_COLLECT}")
         self.update_observations(run_logger)
 
     def evaluate_policy(self, num_of_games, policy, txt_file=None):
@@ -71,7 +71,7 @@ class Solver:
         """
         print("Agent Playing REAL PARAMETERS Tic-Tac-Toe")
         board = self._environment.TicTacToe()  # This Board has REAL PARAMETERS!
-        won_games = 0
+        games_won = 0
         if txt_file is not None:
             open(txt_file, 'w').close()
         actions_ = actions.Actions(board)
@@ -88,15 +88,16 @@ class Solver:
                 game_log.append((action_parameter, board.get_state()))
                 i = (i + 1) % 2
                 if board.get_state().is_over() and board.get_state().get_winner() == 'O':
-                    won_games += 1
+                    games_won += 1
                 elif board.get_state().is_over() and board.get_state().get_winner() != 'O' and txt_file is not None:
                     with open(txt_file, "a") as f:
                         for (action, state) in game_log:
                             print(f"Action: {action}", file=f)
                             state.print_state(file=f)
                         print("------------- NEW GAME ------------\n", file=f)
-        print(f"\tTotal Games Won: {won_games}/{num_of_games}")
-        return won_games
+        print(f"\tTotal Games Won: {games_won}/{num_of_games}")
+        utils.GAMES_WIN_OVER_TIME.append(games_won)
+        return games_won
 
     def compute_policy(self, model_parameters):
         """
@@ -150,7 +151,7 @@ class Solver:
                     _reward + discount_factor * max_next_Q - Q[(str(_state.BOARD), _action)])
 
         start_time = time.time()
-        games_won = []
+        games_won = 0
         marks = ['X', 'O']
         for _ in tqdm(range(iterations), desc='Agent Q-Learning'):
             board.reset()
@@ -170,7 +171,7 @@ class Solver:
                 __update_Q_value(state, (func_action, action_param), reward, next_state, actions_)
                 board.update_state(next_state)
                 i += 1
-        self.write_to_file("games_won_over_time.log", games_won)
+        # self.write_to_file("games_won_over_time.log", games_won)
         end_time = time.time()
         print(f"Total Time: {timedelta(seconds=(end_time - start_time))}")
         # if utils.PLOT:

@@ -32,6 +32,7 @@ LOG_FILE = "observations.log"
 GAMES_WIN_RATIO_FILE = "games_won_over_time.log"
 IGNORE_ACTIONS = ['opponent_mark']
 INIT_MODEL_PARAMETERS = {('ai_mark', 5): 0.8}
+GAMES_WON_OVER_TIME = []
 
 
 def largest_divisors(x):
