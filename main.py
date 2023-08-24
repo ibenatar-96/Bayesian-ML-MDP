@@ -3,6 +3,7 @@ import utils
 import solver
 import model_inference
 import loggers
+import logging
 
 # real_model_parameters = {1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0, 5: 0.3, 6: 1.0, 7: 1.0, 8: 1.0, 9: 1.0}
 
@@ -14,7 +15,7 @@ def main():
     for _ in range(5):
         slvr = solver.Solver(model_parameters, environment, logger)
         slvr.run()
-        model_parameters = model_inference.bayesian_learning(logger, model_parameters)
+        model_parameters = model_inference.bayesian_learning(logger.observations, model_parameters)
 
 
 if __name__ == '__main__':

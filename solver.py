@@ -37,27 +37,7 @@ class Solver:
         self.evaluate_policy(num_of_games=utils.GAMES_TEST, policy=policy)
 
         # Step 3 - Executes computed policy on real adversary, and collects statistics
-        board = self._environment.TicTacToe()  # This Board has REAL PARAMETERS!
-        actions_ = actions.Actions(board)
-        games_won = 0
-        run_logger = []
-        print(f"\n\tPlaying Real & Collecting Logs {utils.GAMES_COLLECT} Tic-Tac-Toe Games")
-        for _ in tqdm(range(utils.GAMES_COLLECT), desc='Playing Real Tic-Tac-Toe & Collecting Logs..'):
-            episode_log = []
-            board.reset()
-            i = 0
-            while not board.get_state().is_over():
-                prev_board = copy.deepcopy(board.get_state().BOARD)
-                action_ind = self.choose_action(board.get_state(), actions_.get_possible_actions(prev_board), policy, i)
-                (func_action, action_parameter), next_state, reward = actions_.activate_action(state=board.get_state(),
-                                                                                               action_ind=action_ind)
-                episode_log.append((prev_board, (func_action.__name__, action_parameter), next_state.BOARD))
-                i = (i + 1) % 2
-                if board.get_state().is_over() and board.get_state().get_winner() == 'O':
-                    games_won += 1
-            run_logger.append(episode_log)
-        print(f"\tTotal Games Won: {games_won}/{utils.GAMES_COLLECT}")
-        self.update_observations(run_logger)
+        self.execute_policy(num_of_games=utils.GAMES_COLLECT, policy=policy)
 
     def evaluate_policy(self, num_of_games, policy, txt_file=None):
         """
@@ -180,6 +160,29 @@ class Solver:
             self._save_policy(Q, os.path.join("logs", "Q_VALUES.txt"))
         return Q
 
+    def execute_policy(self, num_of_games, policy):
+        board = self._environment.TicTacToe()  # This Board has REAL PARAMETERS!
+        actions_ = actions.Actions(board)
+        games_won = 0
+        run_logger = []
+        print(f"\n\tPlaying Real & Collecting Logs {utils.GAMES_COLLECT} Tic-Tac-Toe Games")
+        for _ in tqdm(range(num_of_games), desc='Playing Real Tic-Tac-Toe & Collecting Logs..'):
+            episode_log = []
+            board.reset()
+            i = 0
+            while not board.get_state().is_over():
+                prev_board = copy.deepcopy(board.get_state().BOARD)
+                action_ind = self.choose_action(board.get_state(), actions_.get_possible_actions(prev_board), policy, i)
+                (func_action, action_parameter), next_state, reward = actions_.activate_action(state=board.get_state(),
+                                                                                               action_ind=action_ind)
+                episode_log.append((prev_board, (func_action.__name__, action_parameter), next_state.BOARD))
+                i = (i + 1) % 2
+                if board.get_state().is_over() and board.get_state().get_winner() == 'O':
+                    games_won += 1
+            run_logger.append(episode_log)
+        print(f"\tTotal Games Won: {games_won}/{utils.GAMES_COLLECT}")
+        self.update_observations(run_logger)
+
     def get_policy(self):
         return self._mapping
 
@@ -193,10 +196,7 @@ class Solver:
         For the AI Model plays the tuple will be - (state, {action parameter (1,2,3..,9)}, next_state)
         """
         for episode in run_logger:
-            self._logger.observations.info(str(episode))
-        # with open(self._logger, 'a') as log_file:
-        #     for episode in run_logger:
-        #         log_file.write(f"{str(episode)}\n")
+            self._logger.observations.episode(str(episode))
 
     @staticmethod
     def choose_action(state, available_moves, Q, i):
