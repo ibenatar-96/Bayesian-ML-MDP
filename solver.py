@@ -192,9 +192,11 @@ class Solver:
         For the opponent plays the tuple will be - (state, 'opponent_mark', next_state).
         For the AI Model plays the tuple will be - (state, {action parameter (1,2,3..,9)}, next_state)
         """
-        with open(self._logger, 'a') as log_file:
-            for episode in run_logger:
-                log_file.write(f"{str(episode)}\n")
+        for episode in run_logger:
+            self._logger.observations.info(str(episode))
+        # with open(self._logger, 'a') as log_file:
+        #     for episode in run_logger:
+        #         log_file.write(f"{str(episode)}\n")
 
     @staticmethod
     def choose_action(state, available_moves, Q, i):

@@ -2,6 +2,7 @@
 This file defines global variables.
 """
 import os
+import actions
 
 DEBUG = False
 DEBUG_BOARD = False
@@ -36,14 +37,29 @@ GAMES_WON_OVER_TIME = []
 
 
 def largest_divisors(x):
-    # Initialize variables to store the two largest divisors
     largest_divisor1 = 1
     largest_divisor2 = x
-
-    # Find the two largest divisors of x
     for i in range(2, int(x ** 0.5) + 1):
         if x % i == 0:
             largest_divisor1 = i
             largest_divisor2 = x // i
 
     return largest_divisor2, largest_divisor1
+
+
+def init_model_params():
+    """
+    Also initializes the utils.INIT_MODEL_PARAMETERS, which is the initial belief of the probability for each action.
+    an action is composed of a tuple (function name, action parameter),
+    For example: ('ai_mark', 2) means,
+    The action 'ai_mark' - it is the AI models' turn to mark, and it marks the 2nd cell.
+    utils.INIT_MODEL_PARAMETERS = {
+    ('ai_mark', 1): 1.0
+    ('ai_mark', 2): 1.0
+    ...
+    ('ai_mark', 5): 0.8
+    ...}
+    """
+    for (func_action, action_param) in actions.Actions().get_actions():
+        if func_action not in IGNORE_ACTIONS and (func_action, action_param) not in INIT_MODEL_PARAMETERS:
+            INIT_MODEL_PARAMETERS[(func_action, action_param)] = 1.0
