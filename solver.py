@@ -199,7 +199,7 @@ class Solver:
         if self._colab:
             with open(self._logger, "a") as f:
                 for episode in run_logger:
-                    f.write(f"EPISODE: {str(episode)}")
+                    f.write(f"EPISODE:{str(episode)}\n")
         else:
             for episode in run_logger:
                 self._logger.observations.episode(str(episode))

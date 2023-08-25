@@ -35,6 +35,11 @@ def parse_obs(obs_file):
     0 is mapped to 'ai_mark' function in global fn_numeric_mapping variable. This mapping exists because NumPyro
     MCMC expects numeric values when running inference.
 
+    fn_numeric_mapping = {
+        'ai_mark': 0,
+        ...
+    }
+
     This Function also adds initial 'alpha' and 'beta' parameters to the global model_beta_parameters for every NEW
     fn_action and action_param it encounters.
     for example - model_beta_parameters = {
