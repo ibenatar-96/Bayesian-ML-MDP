@@ -25,14 +25,14 @@ class Loggers:
         self.games_won = self.init_logger(games_won, format='%(levelname)s:%(message)s',level=logging.INFO)
 
     def init_logger(self, log_name, format, level, special_type=None):
-        if os.path.isfile(f"{log_name}.log"):
-            with open(f"{log_name}.log", 'w') as log_file:
+        if os.path.isfile(log_name):
+            with open(log_name, 'w') as log_file:
                 log_file.truncate(0)
-        logging.basicConfig(filename=f"{log_name}.log", format=format, encoding='utf-8', level=level)
+        logging.basicConfig(filename=log_name, format=format, encoding='utf-8', level=level)
         match special_type:
             case 'episode':
                 logging.addLevelName(EPISODE_LEVEL, "EPISODE")
                 logger = logging.getLogger(log_name)
                 logger.setLevel(EPISODE_LEVEL)
                 return EpisodeLogger(logger)
-        return logging.getLogger(log_name)
+        return logging.getLogger(os.path.splitext(log_name)[0])
