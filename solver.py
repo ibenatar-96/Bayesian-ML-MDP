@@ -17,11 +17,12 @@ class Solver:
     run() is used for running and testing policy computed.
     """
 
-    def __init__(self, model_parameters, environment, logger):
+    def __init__(self, model_parameters, environment, logger, colab_mode=False):
         self._mapping = {}
         self._model_parameters = model_parameters
         self._environment = environment
         self._logger = logger
+        self._colab_mode = False
 
     def run(self):
         """
@@ -195,8 +196,13 @@ class Solver:
         For the opponent plays the tuple will be - (state, 'opponent_mark', next_state).
         For the AI Model plays the tuple will be - (state, {action parameter (1,2,3..,9)}, next_state)
         """
-        for episode in run_logger:
-            self._logger.observations.episode(str(episode))
+        if self._colab_mode:
+            with open(self._logger, "a") as f:
+                for episode in run_logger:
+                    f.write(f"EPISODE: {str(episode)}")
+        else:
+            for episode in run_logger:
+                self._logger.observations.episode(str(episode))
 
     @staticmethod
     def choose_action(state, available_moves, Q, i):
