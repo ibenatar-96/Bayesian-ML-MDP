@@ -10,12 +10,12 @@ import logging
 
 def main():
     utils.init_model_params()
-    logger = loggers.Loggers()
+    logger = loggers.Loggers(utils.LOG_FILE, utils.GAMES_WON_OVER_TIME)
     model_parameters = utils.INIT_MODEL_PARAMETERS
     for _ in range(5):
         slvr = solver.Solver(model_parameters, environment, logger)
         slvr.run()
-        model_parameters = model_inference.bayesian_learning(logger.observations, model_parameters)
+        model_parameters = model_inference.bayesian_learning(utils.LOG_FILE, model_parameters)
 
 
 if __name__ == '__main__':

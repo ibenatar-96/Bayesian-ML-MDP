@@ -20,9 +20,9 @@ class EpisodeLogger:
 
 
 class Loggers:
-    def __init__(self):
-        self.observations = self.init_logger('observations', format='%(levelname)s:%(message)s', level=logging.INFO, special_type='episode')
-        self.games_won = self.init_logger('games_won_over_time', format='%(levelname)s:%(message)s',level=logging.INFO)
+    def __init__(self, observations, games_won):
+        self.observations = self.init_logger(observations, format='%(levelname)s:%(message)s', level=logging.INFO, special_type='episode')
+        self.games_won = self.init_logger(games_won, format='%(levelname)s:%(message)s',level=logging.INFO)
 
     def init_logger(self, log_name, format, level, special_type=None):
         if os.path.isfile(f"{log_name}.log"):
