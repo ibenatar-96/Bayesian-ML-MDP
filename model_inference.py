@@ -211,7 +211,7 @@ def posterior_predictive(mcmc):
     In basic words, what we are most expecting to see. (Probability to see each observation given our posterior dist.)
     """
     posterior_predi = numpyro.infer.Predictive(ai_model, posterior_samples=mcmc.get_samples())
-    post_samples = posterior_predi(jax.random.PRNGKey(int(time.time() * 1E6)))
+    posterior_samples = posterior_predi(jax.random.PRNGKey(int(time.time() * 1E6)))
 
     num_mapping = len(model_beta_parameters.keys())
     num_rows, num_cols = utils.largest_divisors(num_mapping)
@@ -228,8 +228,8 @@ def posterior_predictive(mcmc):
             title = (fn_name, action_param)
             axs[i, j].set_title(title)
             axs[i, j].set_xlim(0, 1)
-            success_counts = np.sum(post_samples[p_key] > 0.5, axis=0)
-            fail_counts = np.sum(post_samples[p_key] < 0.5, axis=0)
+            success_counts = np.sum(posterior_samples['o'][i*3 + j] > 0.5, axis=0)
+            fail_counts = np.sum(posterior_samples['o'][i*3 + j] < 0.5, axis=0)
             normalized_vector = [np.mean(fail_counts), np.mean(success_counts)]
             sum_normalized = np.sum(normalized_vector)
             normalized_vector /= sum_normalized
@@ -291,7 +291,7 @@ def bayesian_learning(obs_file, prior_model_parameters=None):
     prior_predi = prior_predictive()
     mcmc = inference(obs_list)
     # posterior(mcmc, obs_list)
-    posterior_predi = posterior_predictive(obs_list, mcmc)
+    posterior_predi = posterior_predictive(mcmc)
     # p_value(obs, posterior_samples)
     dist_stats = summarize_posterior(mcmc, obs_list)
     for key in obs_list:
